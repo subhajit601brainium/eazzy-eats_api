@@ -18,4 +18,5 @@ commonApi.post('/getAllCities', cityValidator.getCityByStateValidator, function(
         res.status(200).send(result);
     })
 })
+
 module.exports = commonApi;

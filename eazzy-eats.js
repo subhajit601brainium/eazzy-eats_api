@@ -63,7 +63,9 @@ app.use('/api/customer',customerRoutes);
 //===== MongoDB Connection starts =====//
 const productionDBString = `mongodb://${config.production.username}:${config.production.password}@${config.production.host}:${config.production.port}/${config.production.dbName}?authSource=${config.production.authDb}`;
 
-var options = {};
+var options = {useNewUrlParser: true,
+    useUnifiedTopology: true,
+    useCreateIndex: true};
 
 mongoose.connect(productionDBString, options, function(err) {
     if(err) {

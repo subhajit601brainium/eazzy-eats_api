@@ -3,6 +3,7 @@ var express = require('express');
 const config = require('../config');
 const registerService = require('../services/customer/register-service');
 const customerValidator = require('../middlewares/validators/customer/customer-validator');
+const jwtTokenValidator = require('../middlewares/jwt-validation-middlewares');
 
 var customerApi = express.Router();
 customerApi.use(express.json());
@@ -39,6 +40,34 @@ customerApi.post('/resetPassword', customerValidator.resetPassword, function(req
 /** Resend Forgot Password OTP */
 customerApi.post('/resendForgotPassOtp', customerValidator.resendForgotPassOtp, function(req, res) {
     registerService.resendForgotPassordOtp(req.body, function(result) {
+        res.status(200).send(result);
+    });
+})
+
+/** View Profile */
+customerApi.post('/viewProfile',jwtTokenValidator.validateToken, customerValidator.viewProfile, function(req, res) {
+    registerService.viewProfile(req.body, function(result) {
+        res.status(200).send(result);
+    });
+})
+
+/** Edit Profile */
+customerApi.post('/editProfile',jwtTokenValidator.validateToken, customerValidator.editProfile, function(req, res) {
+    registerService.editProfile(req.body, function(result) {
+        res.status(200).send(result);
+    });
+})
+
+/** Change password */
+customerApi.post('/changePassword',jwtTokenValidator.validateToken, customerValidator.changePassword, function(req, res) {
+    registerService.changePassword(req.body, function(result) {
+        res.status(200).send(result);
+    });
+})
+
+/** Profile image upload */
+customerApi.post('/profileImageUpload',jwtTokenValidator.validateToken,customerValidator.profileImageUpload, function(req, res) {
+    registerService.profileImageUpload(req, function(result) {
         res.status(200).send(result);
     });
 })

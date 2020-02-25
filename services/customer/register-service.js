@@ -105,5 +105,86 @@ module.exports = {
                 callBack(result);
             }
         });
+    },
+
+    viewProfile: (data, callBack) => {
+        async.waterfall([
+            function(nextCb) {
+                registerModel.viewProfile(data, function(result) {
+                    nextCb(null, result);
+                });
+            }
+        ], function(err, result) {
+            if (err) {
+                callBack({
+                    success: false,
+                    STATUSCODE: 403,
+                    message: 'Request Forbidden',
+                    response_data: {}
+                })
+            } else {
+                callBack(result);
+            }
+        });
+    },
+    editProfile: (data, callBack) => {
+        async.waterfall([
+            function(nextCb) {
+                registerModel.editProfile(data, function(result) {
+                    nextCb(null, result);
+                });
+            }
+        ], function(err, result) {
+            if (err) {
+                callBack({
+                    success: false,
+                    STATUSCODE: 403,
+                    message: 'Request Forbidden',
+                    response_data: {}
+                })
+            } else {
+                callBack(result);
+            }
+        });
+    },
+    changePassword: (data, callBack) => {
+        async.waterfall([
+            function(nextCb) {
+                registerModel.changePassword(data, function(result) {
+                    nextCb(null, result);
+                });
+            }
+        ], function(err, result) {
+            if (err) {
+                callBack({
+                    success: false,
+                    STATUSCODE: 403,
+                    message: 'Request Forbidden',
+                    response_data: {}
+                })
+            } else {
+                callBack(result);
+            }
+        });
+    },
+    profileImageUpload: (data, callBack) => {
+        async.waterfall([
+            function(nextCb) {
+                registerModel.profileImageUpload(data, function(result) {
+                    nextCb(null, result);
+                });
+            }
+        ], function(err, result) {
+            if (err) {
+                callBack({
+                    success: false,
+                    STATUSCODE: 403,
+                    message: 'Request Forbidden',
+                    response_data: {}
+                })
+            } else {
+                callBack(result);
+            }
+        });
     }
 }
