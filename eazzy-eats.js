@@ -15,14 +15,14 @@ var app = express();
 
 //======== Create Server Starts =======//
 
-var credentials = {
-    key: fs.readFileSync('/etc/letsencrypt/live/nodeserver.brainiuminfotech.com/privkey.pem', 'utf8'),
-    cert: fs.readFileSync('/etc/letsencrypt/live/nodeserver.brainiuminfotech.com/fullchain.pem', 'utf8')
-};
+// var credentials = {
+//     key: fs.readFileSync('/etc/letsencrypt/live/nodeserver.brainiuminfotech.com/privkey.pem', 'utf8'),
+//     cert: fs.readFileSync('/etc/letsencrypt/live/nodeserver.brainiuminfotech.com/fullchain.pem', 'utf8')
+// };
 
-var server = https.createServer(credentials, app);
+// var server = https.createServer(credentials, app);
 
-// var server = http.createServer(app);
+ var server = http.createServer(app);
 
 //======== Create Server ends =======//
 
@@ -36,7 +36,6 @@ app.use(logger('dev'));
 app.use(bodyParser.json({extended: true, limit: '200000kb', parameterLimit: 200000 * 100}));
 app.use(bodyParser.urlencoded({extended: true, limit: '200000kb', parameterLimit: 200000 * 100}));
 app.use(fileUpload());
-
 //====== Add Middleware for Rest Ends ======//
 
 app.use(cookieParser());
@@ -65,7 +64,8 @@ app.use('/api/customer',customerRoutes);
 const productionDBString = `mongodb://${config.production.username}:${config.production.password}@${config.production.host}:${config.production.port}/${config.production.dbName}?authSource=${config.production.authDb}`;
 
 var options = {useNewUrlParser: true,
-useUnifiedTopology: true};
+    useUnifiedTopology: true,
+    useCreateIndex: true};
 
 
 mongoose.connect(productionDBString, options, function(err) {

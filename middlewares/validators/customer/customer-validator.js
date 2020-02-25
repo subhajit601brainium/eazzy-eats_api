@@ -51,7 +51,8 @@ module.exports = {
     customerLogin: async (req, res, next) => {
         const rules = joi.object({
             user: joi.string().required().error(new Error('Email/phone is required')),
-            password: joi.string().required().error(new Error('Password is required'))
+            password: joi.string().required().error(new Error('Password is required')),
+            userType: joi.string().required().error(new Error('Please send userType'))
         });
 
         const value = await rules.validate(req.body);
@@ -75,7 +76,8 @@ module.exports = {
                 } else {
                     return new Error('Please enter valid email');
                 }
-            })
+            }),
+            userType: joi.string().required().error(new Error('Please send userType'))
         });
 
         const value = await rules.validate(req.body);
@@ -106,7 +108,8 @@ module.exports = {
                 } else if (err[0].value !== req.body.password) {
                     return new Error('Password and confirm password must match');
                 }
-            })
+            }),
+            userType: joi.string().required().error(new Error('Please send userType'))
         });
 
         const value = await rules.validate(req.body);
@@ -130,6 +133,7 @@ module.exports = {
                     return new Error('Please enter valid email');
                 }
             }),
+            userType: joi.string().required().error(new Error('Please send userType'))
         });
 
         const value = await rules.validate(req.body);
@@ -146,6 +150,7 @@ module.exports = {
     viewProfile: async (req, res, next) => {
         const rules = joi.object({
             customerId: joi.string().required().error(new Error('Customer id is required')),
+            userType: joi.string().required().error(new Error('Please send userType'))
         });
 
         const value = await rules.validate(req.body);
@@ -178,7 +183,8 @@ module.exports = {
                 } else if (typeof err[0].value === 'string') {
                     return new Error('Please enter valid phone');
                 }
-            })
+            }),
+            userType: joi.string().required().error(new Error('Please send userType'))
         });
 
         const value = await rules.validate(req.body);
@@ -210,6 +216,7 @@ module.exports = {
                     return new Error('New password and confirm password must match');
                 }
             }),
+            userType: joi.string().required().error(new Error('Please send userType'))
         });
 
         const value = await rules.validate(req.body);
@@ -228,6 +235,7 @@ module.exports = {
        // console.log(req.files);
         const rules = joi.object({
             customerId: joi.string().required().error(new Error('Customer id is required')),
+            userType: joi.string().required().error(new Error('Please send userType'))
         });
         const imageRules = joi.object({
             image: joi.object().required().error(new Error('Image is required')),
@@ -257,8 +265,6 @@ module.exports = {
         } else {
             next();
         }
-
-
     }
 }
 

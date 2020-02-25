@@ -1,11 +1,14 @@
 var async = require('async');
 var jwt = require('jsonwebtoken');
 var customerSchema = require('../../schema/Customer');
+var deliveryBoySchema = require('../../schema/DeliveryBoy');
+var vendorOwnerSchema = require('../../schema/VendorOwner');
 const config = require('../../config');
 const mail = require('../../modules/sendEmail');
 var bcrypt = require('bcryptjs');
 
 module.exports = {
+    //Customer 
     customerRegistration: (data, callBack) => {
         if (data) {
             async.waterfall([
@@ -101,7 +104,7 @@ module.exports = {
         
                                                 var fs = require('fs');
         
-                                                var file_name = `profile-${result._id}-${Math.floor(Date.now() / 1000)}.${fileExt}`;
+                                                var file_name = `profile-${Math.floor(Math.random() * 1000)}-${Math.floor(Date.now() / 1000)}.${fileExt}`;
                                                 
                                                 let image_path = `public/img/${file_name}`;
         
@@ -198,7 +201,6 @@ module.exports = {
             })
         }
     },
-
     customerLogin: (data, callBack) => {
         if (data) {
             if (/^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/.test(data.user)) {
@@ -260,8 +262,7 @@ module.exports = {
             })
         }
     },
-
-    forgotPassword: (data, callBack) => {
+    customerForgotPassword: (data, callBack) => {
         if (data) {
             customerSchema.findOne({ email: data.email }, function (err, customer) {
                 if (err) {
@@ -302,8 +303,7 @@ module.exports = {
             })
         }
     },
-
-    resetPassword: (data, callBack) => {
+    customerResetPassword: (data, callBack) => {
         if (data) {
             customerSchema.findOne({ email: data.email }, { _id: 1 }, function (err, customer) {
                 if (err) {
@@ -359,8 +359,7 @@ module.exports = {
             })
         }
     },
-
-    resendForgotPasswordOtp: (data, callBack) => {
+    customerResendForgotPasswordOtp: (data, callBack) => {
         if (data) {
             customerSchema.findOne({ email: data.email }, function (err, customer) {
                 if (err) {
@@ -401,8 +400,7 @@ module.exports = {
             })
         }
     },
-
-    viewProfile: (data, callBack) => {
+    customerViewProfile: (data, callBack) => {
         if (data) {
 
             customerSchema.findOne({ _id: data.customerId }, function (err, customer) {
@@ -441,8 +439,7 @@ module.exports = {
 
         }
     },
-
-    editProfile: (data, callBack) => {
+    customerEditProfile: (data, callBack) => {
         if (data) {
             /** Check for customer existence */
             console.log(data.customerId);
@@ -506,7 +503,7 @@ module.exports = {
             });
         }
     },
-    changePassword: (data, callBack) => {
+    customerChangePassword: (data, callBack) => {
         if (data) {
 
             customerSchema.findOne({ _id: data.customerId }, function (err, result) {
@@ -571,7 +568,7 @@ module.exports = {
 
         }
     },
-    profileImageUpload: (data, callBack) => {
+    customerProfileImageUpload: (data, callBack) => {
         if (data) {
 
             customerSchema.findOne({ _id: data.body.customerId }, function (err, result) {
@@ -596,7 +593,7 @@ module.exports = {
                         // The name of the input field (i.e. "image") is used to retrieve the uploaded file
                         let sampleFile = data.files.image;
 
-                        var file_name = `profile-${data.body.customerId}-${Math.floor(Date.now() / 1000)}.${ext}`;
+                        var file_name = `profile-${Math.floor(Math.random() * 1000)}-${Math.floor(Date.now() / 1000)}.${ext}`;
 
                         // Use the mv() method to place the file somewhere on your server
                         sampleFile.mv(`public/img/${file_name}`, function (err) {
@@ -609,6 +606,844 @@ module.exports = {
                                 });
                             } else {
                                 updateUser({ profileImage: file_name }, { _id: data.body.customerId });
+                                callBack({
+                                    success: true,
+                                    STATUSCODE: 200,
+                                    message: 'Profile image updated Successfully',
+                                    response_data: {}
+                                })
+                            }
+                        });
+                    }
+                }
+            });
+
+
+        }
+    },
+    //Delivery Boy
+    deliveryboyLogin: (data, callBack) => {
+        if (data) {
+            if (/^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/.test(data.user)) {
+                var loginCond = { email: data.user };
+            } else {
+                var loginCond = { phone: Number(data.user) };
+            }
+            deliveryBoySchema.findOne(loginCond, function (err, result) {
+                if (err) {
+                    callBack({
+                        success: false,
+                        STATUSCODE: 500,
+                        message: 'Internal DB error',
+                        response_data: {}
+                    });
+                } else {
+                    if (result) {
+                        const comparePass = bcrypt.compareSync(data.password, result.password);
+                        if (comparePass) {
+                            const authToken = generateToken(result);
+                            let response = {
+                                userDetails: {
+                                    firstName: result.firstName,
+                                    lastName: result.lastName,
+                                    email: result.email,
+                                    phone: result.phone,
+                                    cityId: result.cityId,
+                                    location: result.location,
+                                    id: result._id,
+                                    profileImage : `${config.serverhost}:${config.port}/img/` + result.profileImage
+                                },
+                                authToken: authToken
+                            }
+
+                            callBack({
+                                success: true,
+                                STATUSCODE: 200,
+                                message: 'Login Successfull',
+                                response_data: response
+                            })
+
+                        } else {
+                            callBack({
+                                success: false,
+                                STATUSCODE: 422,
+                                message: 'Invalid email or password',
+                                response_data: {}
+                            });
+                        }
+                    } else {
+                        callBack({
+                            success: false,
+                            STATUSCODE: 422,
+                            message: 'Invalid email or password',
+                            response_data: {}
+                        });
+                    }
+                }
+            })
+        }
+    },
+    deliveryboyForgotPassword: (data, callBack) => {
+        if (data) {
+            deliveryBoySchema.findOne({ email: data.email }, function (err, customer) {
+                if (err) {
+                    callBack({
+                        success: false,
+                        STATUSCODE: 500,
+                        message: 'Internal DB error',
+                        response_data: {}
+                    });
+                } else {
+                    if (customer) {
+                        let forgotPasswordOtp = Math.random().toString().replace('0.', '').substr(0, 4);
+                        customer = customer.toObject();
+                        customer.forgotPasswordOtp = forgotPasswordOtp;
+                        try {
+                            mail('forgotPasswordMail')(customer.email, customer).send();
+                            callBack({
+                                success: false,
+                                STATUSCODE: 200,
+                                message: 'Please check your email. We have sent a code to be used to reset password.',
+                                response_data: {
+                                    email: customer.email,
+                                    forgotPassOtp: forgotPasswordOtp
+                                }
+                            });
+                        } catch (Error) {
+                            console.log('Something went wrong while sending email');
+                        }
+                    } else {
+                        callBack({
+                            success: false,
+                            STATUSCODE: 422,
+                            message: 'User not found',
+                            response_data: {}
+                        });
+                    }
+                }
+            })
+        }
+    },
+    deliveryboyResetPassword: (data, callBack) => {
+        if (data) {
+            deliveryBoySchema.findOne({ email: data.email }, { _id: 1 }, function (err, customer) {
+                if (err) {
+                    callBack({
+                        success: false,
+                        STATUSCODE: 500,
+                        message: 'Internal DB error',
+                        response_data: {}
+                    });
+                } else {
+                    if (customer) {
+                        bcrypt.hash(data.password, 8, function (err, hash) {
+                            if (err) {
+                                callBack({
+                                    success: false,
+                                    STATUSCODE: 500,
+                                    message: 'Something went wrong while setting the password',
+                                    response_data: {}
+                                });
+                            } else {
+                                deliveryBoySchema.update({ _id: customer._id }, {
+                                    $set: {
+                                        password: hash
+                                    }
+                                }, function (err, res) {
+                                    if (err) {
+                                        callBack({
+                                            success: false,
+                                            STATUSCODE: 500,
+                                            message: 'Internal DB error',
+                                            response_data: {}
+                                        });
+                                    } else {
+                                        callBack({
+                                            success: true,
+                                            STATUSCODE: 200,
+                                            message: 'Password updated successfully',
+                                            response_data: {}
+                                        });
+                                    }
+                                })
+                            }
+                        })
+                    } else {
+                        callBack({
+                            success: false,
+                            STATUSCODE: 422,
+                            message: 'User not found',
+                            response_data: {}
+                        });
+                    }
+                }
+            })
+        }
+    },
+    deliveryboyResendForgotPasswordOtp: (data, callBack) => {
+        if (data) {
+            deliveryBoySchema.findOne({ email: data.email }, function (err, customer) {
+                if (err) {
+                    callBack({
+                        success: false,
+                        STATUSCODE: 500,
+                        message: 'Internal DB error',
+                        response_data: {}
+                    });
+                } else {
+                    if (customer) {
+                        let forgotPasswordOtp = Math.random().toString().replace('0.', '').substr(0, 4);
+                        customer = customer.toObject();
+                        customer.forgotPasswordOtp = forgotPasswordOtp;
+                        try {
+                            mail('forgotPasswordMail')(customer.email, customer).send();
+                            callBack({
+                                success: false,
+                                STATUSCODE: 200,
+                                message: 'Please check your email. We have sent a code to be used to reset password.',
+                                response_data: {
+                                    email: customer.email,
+                                    forgotPassOtp: forgotPasswordOtp
+                                }
+                            });
+                        } catch (Error) {
+                            console.log('Something went wrong while sending email');
+                        }
+                    } else {
+                        callBack({
+                            success: false,
+                            STATUSCODE: 422,
+                            message: 'User not found',
+                            response_data: {}
+                        });
+                    }
+                }
+            })
+        }
+    },
+    deliveryboyViewProfile: (data, callBack) => {
+        if (data) {
+
+            deliveryBoySchema.findOne({ _id: data.customerId }, function (err, customer) {
+                if (err) {
+                    callBack({
+                        success: false,
+                        STATUSCODE: 500,
+                        message: 'Internal DB error',
+                        response_data: {}
+                    });
+                } else {
+                    if (customer) {
+                        let response = {
+                            firstName: customer.firstName,
+                            lastName: customer.lastName,
+                            email: customer.email,
+                            phone: customer.phone,
+                            countryCode: customer.countryCode
+                        }
+
+                        if(customer.profileImage != '') {
+                            response.profileImage = `${config.serverhost}:${config.port}/img/` + customer.profileImage
+                        } else {
+                            response.profileImage = ''
+                        }
+                        callBack({
+                            success: true,
+                            STATUSCODE: 200,
+                            message: 'User profile fetched successfully',
+                            response_data: response
+                        })
+
+                    }
+                }
+            });
+
+        }
+    },
+    deliveryboyEditProfile: (data, callBack) => {
+        if (data) {
+            /** Check for customer existence */
+            deliveryBoySchema.countDocuments({ email: data.email, _id: { $ne: data.customerId } }).exec(function (err, count) {
+                if (err) {
+                    callBack({
+                        success: false,
+                        STATUSCODE: 500,
+                        message: 'Internal DB error',
+                        response_data: {}
+                    });
+                } else {
+                    if (count) {
+                        callBack({
+                            success: false,
+                            STATUSCODE: 422,
+                            message: 'User already exists for this email',
+                            response_data: {}
+                        });
+                    } else {
+                        deliveryBoySchema.countDocuments({ phone: data.phone, _id: { $ne: data.customerId } }).exec(function (err, count) {
+                            if (err) {
+                                callBack({
+                                    success: false,
+                                    STATUSCODE: 500,
+                                    message: 'Internal DB error',
+                                    response_data: {}
+                                });
+
+                            } if (count) {
+                                callBack({
+                                    success: false,
+                                    STATUSCODE: 422,
+                                    message: 'User already exists for this phone no.',
+                                    response_data: {}
+                                });
+                            } else {
+
+                                let updateData = {
+                                    firstName: data.firstName,
+                                    lastName: data.lastName,
+                                    email: data.email,
+                                    phone: data.phone,
+                                    countryCode: data.countryCode,
+                                }
+
+                                updateDeliveryBoy(updateData, { _id: data.customerId });
+
+                                callBack({
+                                    success: true,
+                                    STATUSCODE: 200,
+                                    message: 'User updated Successfully',
+                                    response_data: {}
+                                })
+
+                            }
+                        })
+                    }
+                }
+            });
+        }
+    },
+    deliveryboyChangePassword: (data, callBack) => {
+        if (data) {
+
+            deliveryBoySchema.findOne({ _id: data.customerId }, function (err, result) {
+                if (err) {
+                    callBack({
+                        success: false,
+                        STATUSCODE: 500,
+                        message: 'Internal DB error',
+                        response_data: {}
+                    });
+                } else {
+                    if (result) {
+                        const comparePass = bcrypt.compareSync(data.oldPassword, result.password);
+                        if (comparePass) {
+
+                            bcrypt.hash(data.newPassword, 8, function (err, hash) {
+                                if (err) {
+                                    callBack({
+                                        success: false,
+                                        STATUSCODE: 500,
+                                        message: 'Something went wrong while setting the password',
+                                        response_data: {}
+                                    });
+                                } else {
+                                    deliveryBoySchema.update({ _id: data.customerId }, {
+                                        $set: {
+                                            password: hash
+                                        }
+                                    }, function (err, res) {
+                                        if (err) {
+                                            callBack({
+                                                success: false,
+                                                STATUSCODE: 500,
+                                                message: 'Internal DB error',
+                                                response_data: {}
+                                            });
+                                        } else {
+                                            callBack({
+                                                success: true,
+                                                STATUSCODE: 200,
+                                                message: 'Password updated successfully',
+                                                response_data: {}
+                                            });
+                                        }
+                                    })
+                                }
+                            })
+                        } else {
+                            callBack({
+                                success: false,
+                                STATUSCODE: 422,
+                                message: 'Invalid old password',
+                                response_data: {}
+                            });
+                        }
+                    }
+                }
+            });
+
+
+
+
+        }
+    },
+    deliveryboyProfileImageUpload: (data, callBack) => {
+        if (data) {
+
+            deliveryBoySchema.findOne({ _id: data.body.customerId }, function (err, result) {
+                if (err) {
+                    callBack({
+                        success: false,
+                        STATUSCODE: 500,
+                        message: 'Internal DB error',
+                        response_data: {}
+                    });
+                } else {
+                    if (result) {
+                        if (result.profileImage != '') {
+                            var fs = require('fs');
+                            var filePath = `public/img/${result.profileImage}`;
+                            fs.unlink(filePath, (err) => { });
+                        }
+
+                        //Get image extension
+                        var ext = getExtension(data.files.image.name);
+
+                        // The name of the input field (i.e. "image") is used to retrieve the uploaded file
+                        let sampleFile = data.files.image;
+
+                        var file_name = `dbprofile-${Math.floor(Math.random() * 1000)}-${Math.floor(Date.now() / 1000)}.${ext}`;
+
+                        // Use the mv() method to place the file somewhere on your server
+                        sampleFile.mv(`public/img/${file_name}`, function (err) {
+                            if (err) {
+                                callBack({
+                                    success: false,
+                                    STATUSCODE: 500,
+                                    message: 'Internal error',
+                                    response_data: {}
+                                });
+                            } else {
+                                updateDeliveryBoy({ profileImage: file_name }, { _id: data.body.customerId });
+                                callBack({
+                                    success: true,
+                                    STATUSCODE: 200,
+                                    message: 'Profile image updated Successfully',
+                                    response_data: {}
+                                })
+                            }
+                        });
+                    }
+                }
+            });
+
+
+        }
+    },
+    //Vendor Owner
+    vendorownerLogin: (data, callBack) => {
+        if (data) {
+            if (/^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/.test(data.user)) {
+                var loginCond = { email: data.user };
+            } else {
+                var loginCond = { phone: Number(data.user) };
+            }
+            vendorOwnerSchema.findOne(loginCond, function (err, result) {
+                if (err) {
+                    callBack({
+                        success: false,
+                        STATUSCODE: 500,
+                        message: 'Internal DB error',
+                        response_data: {}
+                    });
+                } else {
+                    if (result) {
+                        const comparePass = bcrypt.compareSync(data.password, result.password);
+                        if (comparePass) {
+                            const authToken = generateToken(result);
+                            let response = {
+                                userDetails: {
+                                    firstName: result.firstName,
+                                    lastName: result.lastName,
+                                    email: result.email,
+                                    phone: result.phone,
+                                    cityId: result.cityId,
+                                    location: result.location,
+                                    id: result._id,
+                                    profileImage : `${config.serverhost}:${config.port}/img/` + result.profileImage
+                                },
+                                authToken: authToken
+                            }
+
+                            callBack({
+                                success: true,
+                                STATUSCODE: 200,
+                                message: 'Login Successfull',
+                                response_data: response
+                            })
+
+                        } else {
+                            callBack({
+                                success: false,
+                                STATUSCODE: 422,
+                                message: 'Invalid email or password',
+                                response_data: {}
+                            });
+                        }
+                    } else {
+                        callBack({
+                            success: false,
+                            STATUSCODE: 422,
+                            message: 'Invalid email or password',
+                            response_data: {}
+                        });
+                    }
+                }
+            })
+        }
+    },
+    vendorownerForgotPassword: (data, callBack) => {
+        if (data) {
+            vendorOwnerSchema.findOne({ email: data.email }, function (err, customer) {
+                if (err) {
+                    callBack({
+                        success: false,
+                        STATUSCODE: 500,
+                        message: 'Internal DB error',
+                        response_data: {}
+                    });
+                } else {
+                    if (customer) {
+                        let forgotPasswordOtp = Math.random().toString().replace('0.', '').substr(0, 4);
+                        customer = customer.toObject();
+                        customer.forgotPasswordOtp = forgotPasswordOtp;
+                        try {
+                            mail('forgotPasswordMail')(customer.email, customer).send();
+                            callBack({
+                                success: false,
+                                STATUSCODE: 200,
+                                message: 'Please check your email. We have sent a code to be used to reset password.',
+                                response_data: {
+                                    email: customer.email,
+                                    forgotPassOtp: forgotPasswordOtp
+                                }
+                            });
+                        } catch (Error) {
+                            console.log('Something went wrong while sending email');
+                        }
+                    } else {
+                        callBack({
+                            success: false,
+                            STATUSCODE: 422,
+                            message: 'User not found',
+                            response_data: {}
+                        });
+                    }
+                }
+            })
+        }
+    },
+    vendorownerResetPassword: (data, callBack) => {
+        if (data) {
+            vendorOwnerSchema.findOne({ email: data.email }, { _id: 1 }, function (err, customer) {
+                if (err) {
+                    callBack({
+                        success: false,
+                        STATUSCODE: 500,
+                        message: 'Internal DB error',
+                        response_data: {}
+                    });
+                } else {
+                    if (customer) {
+                        bcrypt.hash(data.password, 8, function (err, hash) {
+                            if (err) {
+                                callBack({
+                                    success: false,
+                                    STATUSCODE: 500,
+                                    message: 'Something went wrong while setting the password',
+                                    response_data: {}
+                                });
+                            } else {
+                                vendorOwnerSchema.update({ _id: customer._id }, {
+                                    $set: {
+                                        password: hash
+                                    }
+                                }, function (err, res) {
+                                    if (err) {
+                                        callBack({
+                                            success: false,
+                                            STATUSCODE: 500,
+                                            message: 'Internal DB error',
+                                            response_data: {}
+                                        });
+                                    } else {
+                                        callBack({
+                                            success: true,
+                                            STATUSCODE: 200,
+                                            message: 'Password updated successfully',
+                                            response_data: {}
+                                        });
+                                    }
+                                })
+                            }
+                        })
+                    } else {
+                        callBack({
+                            success: false,
+                            STATUSCODE: 422,
+                            message: 'User not found',
+                            response_data: {}
+                        });
+                    }
+                }
+            })
+        }
+    },
+    vendorownerResendForgotPasswordOtp: (data, callBack) => {
+        if (data) {
+            vendorOwnerSchema.findOne({ email: data.email }, function (err, customer) {
+                if (err) {
+                    callBack({
+                        success: false,
+                        STATUSCODE: 500,
+                        message: 'Internal DB error',
+                        response_data: {}
+                    });
+                } else {
+                    if (customer) {
+                        let forgotPasswordOtp = Math.random().toString().replace('0.', '').substr(0, 4);
+                        customer = customer.toObject();
+                        customer.forgotPasswordOtp = forgotPasswordOtp;
+                        try {
+                            mail('forgotPasswordMail')(customer.email, customer).send();
+                            callBack({
+                                success: false,
+                                STATUSCODE: 200,
+                                message: 'Please check your email. We have sent a code to be used to reset password.',
+                                response_data: {
+                                    email: customer.email,
+                                    forgotPassOtp: forgotPasswordOtp
+                                }
+                            });
+                        } catch (Error) {
+                            console.log('Something went wrong while sending email');
+                        }
+                    } else {
+                        callBack({
+                            success: false,
+                            STATUSCODE: 422,
+                            message: 'User not found',
+                            response_data: {}
+                        });
+                    }
+                }
+            })
+        }
+    },
+    vendorownerViewProfile: (data, callBack) => {
+        if (data) {
+
+            vendorOwnerSchema.findOne({ _id: data.customerId}, function (err, customer) {
+                if (err) {
+                    callBack({
+                        success: false,
+                        STATUSCODE: 500,
+                        message: 'Internal DB error',
+                        response_data: {}
+                    });
+                } else {
+                    if (customer) {
+                        let response = {
+                            firstName: customer.firstName,
+                            lastName: customer.lastName,
+                            email: customer.email,
+                            phone: customer.phone,
+                            countryCode: customer.countryCode
+                        }
+
+                        if(customer.profileImage != '') {
+                            response.profileImage = `${config.serverhost}:${config.port}/img/` + customer.profileImage
+                        } else {
+                            response.profileImage = ''
+                        }
+                        callBack({
+                            success: true,
+                            STATUSCODE: 200,
+                            message: 'User profile fetched successfully',
+                            response_data: response
+                        })
+
+                    }
+                }
+            });
+
+        }
+    },
+    vendorownerEditProfile: (data, callBack) => {
+        if (data) {
+            console.log(data);
+            /** Check for customer existence */
+            vendorOwnerSchema.countDocuments({ email: data.email, _id: { $ne: data.customerId } }).exec(function (err, count) {
+                if (err) {
+                    callBack({
+                        success: false,
+                        STATUSCODE: 500,
+                        message: 'Internal DB error',
+                        response_data: {}
+                    });
+                } else {
+                    if (count) {
+                        callBack({
+                            success: false,
+                            STATUSCODE: 422,
+                            message: 'User already exists for this email',
+                            response_data: {}
+                        });
+                    } else {
+                        vendorOwnerSchema.countDocuments({ phone: data.phone, _id: { $ne: data.customerId } }).exec(function (err, count) {
+                            if (err) {
+                                callBack({
+                                    success: false,
+                                    STATUSCODE: 500,
+                                    message: 'Internal DB error',
+                                    response_data: {}
+                                });
+
+                            } if (count) {
+                                callBack({
+                                    success: false,
+                                    STATUSCODE: 422,
+                                    message: 'User already exists for this phone no.',
+                                    response_data: {}
+                                });
+                            } else {
+
+                                let updateData = {
+                                    firstName: data.firstName,
+                                    lastName: data.lastName,
+                                    email: data.email,
+                                    phone: data.phone,
+                                    countryCode: data.countryCode,
+                                }
+
+                                updateVendor(updateData, { _id: data.customerId });
+
+                                callBack({
+                                    success: true,
+                                    STATUSCODE: 200,
+                                    message: 'User updated Successfully',
+                                    response_data: {}
+                                })
+
+                            }
+                        })
+                    }
+                }
+            });
+        }
+    },
+    vendorownerChangePassword: (data, callBack) => {
+        if (data) {
+
+            vendorOwnerSchema.findOne({ _id: data.customerId }, function (err, result) {
+                if (err) {
+                    callBack({
+                        success: false,
+                        STATUSCODE: 500,
+                        message: 'Internal DB error',
+                        response_data: {}
+                    });
+                } else {
+                    if (result) {
+                        const comparePass = bcrypt.compareSync(data.oldPassword, result.password);
+                        if (comparePass) {
+
+                            bcrypt.hash(data.newPassword, 8, function (err, hash) {
+                                if (err) {
+                                    callBack({
+                                        success: false,
+                                        STATUSCODE: 500,
+                                        message: 'Something went wrong while setting the password',
+                                        response_data: {}
+                                    });
+                                } else {
+                                    vendorOwnerSchema.update({ _id: data.customerId }, {
+                                        $set: {
+                                            password: hash
+                                        }
+                                    }, function (err, res) {
+                                        if (err) {
+                                            callBack({
+                                                success: false,
+                                                STATUSCODE: 500,
+                                                message: 'Internal DB error',
+                                                response_data: {}
+                                            });
+                                        } else {
+                                            callBack({
+                                                success: true,
+                                                STATUSCODE: 200,
+                                                message: 'Password updated successfully',
+                                                response_data: {}
+                                            });
+                                        }
+                                    })
+                                }
+                            })
+                        } else {
+                            callBack({
+                                success: false,
+                                STATUSCODE: 422,
+                                message: 'Invalid old password',
+                                response_data: {}
+                            });
+                        }
+                    }
+                }
+            });
+
+
+
+
+        }
+    },
+    vendorownerProfileImageUpload: (data, callBack) => {
+        if (data) {
+            vendorOwnerSchema.findOne({ _id: data.body.customerId }, function (err, result) {
+                if (err) {
+                    callBack({
+                        success: false,
+                        STATUSCODE: 500,
+                        message: 'Internal DB error',
+                        response_data: {}
+                    });
+                } else {
+                    if (result) {
+                        if (result.profileImage != '') {
+                            var fs = require('fs');
+                            var filePath = `public/img/${result.profileImage}`;
+                            fs.unlink(filePath, (err) => { });
+                        }
+
+                        //Get image extension
+                        var ext = getExtension(data.files.image.name);
+
+                        // The name of the input field (i.e. "image") is used to retrieve the uploaded file
+                        let sampleFile = data.files.image;
+
+                        var file_name = `vendorprofile-${Math.floor(Math.random() * 1000)}-${Math.floor(Date.now() / 1000)}.${ext}`;
+
+                        // Use the mv() method to place the file somewhere on your server
+                        sampleFile.mv(`public/img/${file_name}`, function (err) {
+                            if (err) {
+                                callBack({
+                                    success: false,
+                                    STATUSCODE: 500,
+                                    message: 'Internal error',
+                                    response_data: {}
+                                });
+                            } else {
+                                updateVendor({ profileImage: file_name }, { _id: data.body.customerId });
                                 callBack({
                                     success: true,
                                     STATUSCODE: 200,
@@ -645,20 +1480,34 @@ function updateUser(update, cond) {
     });
 }
 
-function getExtension(filename) {
-    return filename.substring(filename.indexOf('.') + 1);
+function updateDeliveryBoy(update, cond) {
+    return new Promise(function (resolve, reject) {
+        deliveryBoySchema.update(cond, {
+            $set: update
+        }, function (err, res) {
+            if (err) {
+                return reject(err);
+            } else {
+                return resolve(res);
+            }
+        });
+    });
 }
 
-var fs = require('fs');
-var https = require('https');
-//Node.js Function to save image from External URL.
-function saveImageToDisk(url, localPath) {
-    var fullUrl = url;
-    var file = fs.createWriteStream(localPath);
-    console.log('url', url);
-    var request = https.get(url, function (response) {
-        console.log('response', response);
-        response.pipe(file);
+function updateVendor(update, cond) {
+    return new Promise(function (resolve, reject) {
+        vendorOwnerSchema.update(cond, {
+            $set: update
+        }, function (err, res) {
+            if (err) {
+                return reject(err);
+            } else {
+                return resolve(res);
+            }
+        });
     });
+}
 
+function getExtension(filename) {
+    return filename.substring(filename.indexOf('.') + 1);
 }

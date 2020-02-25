@@ -1,6 +1,6 @@
-﻿var config = {
+var config = {
     port: 3470,
-       serverhost: 'https://nodeserver.brainiuminfotech.com',
+    serverhost: 'http://localhost',
     secretKey: 'hyrgqwjdfbw4534efqrwer2q38945765',
     production: {
         username: 'brain1uMMong0User',

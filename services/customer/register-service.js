@@ -24,51 +24,139 @@ module.exports = {
     },
 
     customerLogin: (data, callBack) => {
-        async.waterfall([
-            function(nextCb) {
-                registerModel.customerLogin(data, function(result) {
-                    nextCb(null, result);
-                })
-            }
-        ], function(err, result) {
-            if (err) {
-                callBack({
-                    success: false,
-                    STATUSCODE: 403,
-                    message: 'Request Forbidden',
-                    response_data: {}
-                })
-            } else {
-                callBack(result);
-            }
-        });
+
+        if(data.userType == 'customer') {
+            async.waterfall([
+                function(nextCb) {
+                    registerModel.customerLogin(data, function(result) {
+                        nextCb(null, result);
+                    })
+                }
+            ], function(err, result) {
+                if (err) {
+                    callBack({
+                        success: false,
+                        STATUSCODE: 403,
+                        message: 'Request Forbidden',
+                        response_data: {}
+                    })
+                } else {
+                    callBack(result);
+                }
+            });
+        } else if(data.userType == 'deliveryboy') {
+            async.waterfall([
+                function(nextCb) {
+                    registerModel.deliveryboyLogin(data, function(result) {
+                        nextCb(null, result);
+                    })
+                }
+            ], function(err, result) {
+                if (err) {
+                    callBack({
+                        success: false,
+                        STATUSCODE: 403,
+                        message: 'Request Forbidden',
+                        response_data: {}
+                    })
+                } else {
+                    callBack(result);
+                }
+            });
+        } else if(data.userType == 'vendorowner') {
+            async.waterfall([
+                function(nextCb) {
+                    registerModel.vendorownerLogin(data, function(result) {
+                        nextCb(null, result);
+                    })
+                }
+            ], function(err, result) {
+                if (err) {
+                    callBack({
+                        success: false,
+                        STATUSCODE: 403,
+                        message: 'Request Forbidden',
+                        response_data: {}
+                    })
+                } else {
+                    callBack(result);
+                }
+            });
+        }
+       
     },
 
     forgotPassword: (data, callBack) => {
-        async.waterfall([
-            function(nextCb) {
-                registerModel.forgotPassword(data, function(result) {
-                    nextCb(null, result);
-                });
-            }
-        ], function(err, result) {
-            if (err) {
-                callBack({
-                    success: false,
-                    STATUSCODE: 403,
-                    message: 'Request Forbidden',
-                    response_data: {}
-                })
-            } else {
-                callBack(result);
-            }
-        });
+        if(data.userType == 'customer') {
+
+            async.waterfall([
+                function(nextCb) {
+                    registerModel.customerForgotPassword(data, function(result) {
+                        nextCb(null, result);
+                    });
+                }
+            ], function(err, result) {
+                if (err) {
+                    callBack({
+                        success: false,
+                        STATUSCODE: 403,
+                        message: 'Request Forbidden',
+                        response_data: {}
+                    })
+                } else {
+                    callBack(result);
+                }
+            });
+        } else if(data.userType == 'deliveryboy') {
+
+            async.waterfall([
+                function(nextCb) {
+                    registerModel.deliveryboyForgotPassword(data, function(result) {
+                        nextCb(null, result);
+                    });
+                }
+            ], function(err, result) {
+                if (err) {
+                    callBack({
+                        success: false,
+                        STATUSCODE: 403,
+                        message: 'Request Forbidden',
+                        response_data: {}
+                    })
+                } else {
+                    callBack(result);
+                }
+            });
+
+        } else if(data.userType == 'vendorowner') {
+
+            async.waterfall([
+                function(nextCb) {
+                    registerModel.vendorownerForgotPassword(data, function(result) {
+                        nextCb(null, result);
+                    });
+                }
+            ], function(err, result) {
+                if (err) {
+                    callBack({
+                        success: false,
+                        STATUSCODE: 403,
+                        message: 'Request Forbidden',
+                        response_data: {}
+                    })
+                } else {
+                    callBack(result);
+                }
+            });
+        } 
+        
     },
 
     resetPassword: (data, callBack) => {
+        if(data.userType == 'customer') {
         async.waterfall([
             function(nextCb) {
-                registerModel.resetPassword(data, function(result) {
+                registerModel.customerResetPassword(data, function(result) {
                     nextCb(null, result);
                 });
             }
@@ -84,12 +172,52 @@ module.exports = {
                 callBack(result);
             }
         });
+    } else if(data.userType == 'deliveryboy') {
+        async.waterfall([
+            function(nextCb) {
+                registerModel.deliveryboyResetPassword(data, function(result) {
+                    nextCb(null, result);
+                });
+            }
+        ], function(err, result) {
+            if (err) {
+                callBack({
+                    success: false,
+                    STATUSCODE: 403,
+                    message: 'Request Forbidden',
+                    response_data: {}
+                })
+            } else {
+                callBack(result);
+            }
+        });
+    } else if(data.userType == 'vendorowner') {
+        async.waterfall([
+            function(nextCb) {
+                registerModel.vendorownerResetPassword(data, function(result) {
+                    nextCb(null, result);
+                });
+            }
+        ], function(err, result) {
+            if (err) {
+                callBack({
+                    success: false,
+                    STATUSCODE: 403,
+                    message: 'Request Forbidden',
+                    response_data: {}
+                })
+            } else {
+                callBack(result);
+            }
+        });
+    }
     },
 
     resendForgotPassordOtp: (data, callBack) => {
+        if(data.userType == 'customer') {
         async.waterfall([
             function(nextCb) {
-                registerModel.resendForgotPasswordOtp(data, function(result) {
+                registerModel.customerResendForgotPasswordOtp(data, function(result) {
                     nextCb(null, result);
                 });
             }
@@ -105,12 +233,52 @@ module.exports = {
                 callBack(result);
             }
         });
+    } else if(data.userType == 'deliveryboy') {
+        async.waterfall([
+            function(nextCb) {
+                registerModel.deliveryboyResendForgotPasswordOtp(data, function(result) {
+                    nextCb(null, result);
+                });
+            }
+        ], function(err, result) {
+            if (err) {
+                callBack({
+                    success: false,
+                    STATUSCODE: 403,
+                    message: 'Request Forbidden',
+                    response_data: {}
+                })
+            } else {
+                callBack(result);
+            }
+        });
+    } else if(data.userType == 'vendorowner') {
+        async.waterfall([
+            function(nextCb) {
+                registerModel.vendorownerResendForgotPasswordOtp(data, function(result) {
+                    nextCb(null, result);
+                });
+            }
+        ], function(err, result) {
+            if (err) {
+                callBack({
+                    success: false,
+                    STATUSCODE: 403,
+                    message: 'Request Forbidden',
+                    response_data: {}
+                })
+            } else {
+                callBack(result);
+            }
+        });
+    }
     },
 
     viewProfile: (data, callBack) => {
+        if(data.userType == 'customer') {
         async.waterfall([
             function(nextCb) {
-                registerModel.viewProfile(data, function(result) {
+                registerModel.customerViewProfile(data, function(result) {
                     nextCb(null, result);
                 });
             }
@@ -126,31 +294,112 @@ module.exports = {
                 callBack(result);
             }
         });
+    } else if(data.userType == 'deliveryboy') {
+        async.waterfall([
+            function(nextCb) {
+                registerModel.deliveryboyViewProfile(data, function(result) {
+                    nextCb(null, result);
+                });
+            }
+        ], function(err, result) {
+            if (err) {
+                callBack({
+                    success: false,
+                    STATUSCODE: 403,
+                    message: 'Request Forbidden',
+                    response_data: {}
+                })
+            } else {
+                callBack(result);
+            }
+        });
+    } else if(data.userType == 'vendorowner') {
+        async.waterfall([
+            function(nextCb) {
+                registerModel.vendorownerViewProfile(data, function(result) {
+                    nextCb(null, result);
+                });
+            }
+        ], function(err, result) {
+            if (err) {
+                callBack({
+                    success: false,
+                    STATUSCODE: 403,
+                    message: 'Request Forbidden',
+                    response_data: {}
+                })
+            } else {
+                callBack(result);
+            }
+        });
+    }
     },
     editProfile: (data, callBack) => {
-        async.waterfall([
-            function(nextCb) {
-                registerModel.editProfile(data, function(result) {
-                    nextCb(null, result);
-                });
-            }
-        ], function(err, result) {
-            if (err) {
-                callBack({
-                    success: false,
-                    STATUSCODE: 403,
-                    message: 'Request Forbidden',
-                    response_data: {}
-                })
-            } else {
-                callBack(result);
-            }
-        });
+        if(data.userType == 'customer') {
+            async.waterfall([
+                function(nextCb) {
+                    registerModel.customerEditProfile(data, function(result) {
+                        nextCb(null, result);
+                    });
+                }
+            ], function(err, result) {
+                if (err) {
+                    callBack({
+                        success: false,
+                        STATUSCODE: 403,
+                        message: 'Request Forbidden',
+                        response_data: {}
+                    })
+                } else {
+                    callBack(result);
+                }
+            });
+        } else if(data.userType == 'deliveryboy') {
+            async.waterfall([
+                function(nextCb) {
+                    registerModel.deliveryboyEditProfile(data, function(result) {
+                        nextCb(null, result);
+                    });
+                }
+            ], function(err, result) {
+                if (err) {
+                    callBack({
+                        success: false,
+                        STATUSCODE: 403,
+                        message: 'Request Forbidden',
+                        response_data: {}
+                    })
+                } else {
+                    callBack(result);
+                }
+            });
+        } else if(data.userType == 'vendorowner') {
+            async.waterfall([
+                function(nextCb) {
+                    registerModel.vendorownerEditProfile(data, function(result) {
+                        nextCb(null, result);
+                    });
+                }
+            ], function(err, result) {
+                if (err) {
+                    callBack({
+                        success: false,
+                        STATUSCODE: 403,
+                        message: 'Request Forbidden',
+                        response_data: {}
+                    })
+                } else {
+                    callBack(result);
+                }
+            });
+        }
+       
     },
     changePassword: (data, callBack) => {
+        if(data.userType == 'customer') {
         async.waterfall([
             function(nextCb) {
-                registerModel.changePassword(data, function(result) {
+                registerModel.customerChangePassword(data, function(result) {
                     nextCb(null, result);
                 });
             }
@@ -166,11 +415,51 @@ module.exports = {
                 callBack(result);
             }
         });
+    } else if(data.userType == 'deliveryboy') {
+        async.waterfall([
+            function(nextCb) {
+                registerModel.deliveryboyChangePassword(data, function(result) {
+                    nextCb(null, result);
+                });
+            }
+        ], function(err, result) {
+            if (err) {
+                callBack({
+                    success: false,
+                    STATUSCODE: 403,
+                    message: 'Request Forbidden',
+                    response_data: {}
+                })
+            } else {
+                callBack(result);
+            }
+        });
+    } else if(data.userType == 'vendorowner') {
+        async.waterfall([
+            function(nextCb) {
+                registerModel.vendorownerChangePassword(data, function(result) {
+                    nextCb(null, result);
+                });
+            }
+        ], function(err, result) {
+            if (err) {
+                callBack({
+                    success: false,
+                    STATUSCODE: 403,
+                    message: 'Request Forbidden',
+                    response_data: {}
+                })
+            } else {
+                callBack(result);
+            }
+        });
+    }
     },
     profileImageUpload: (data, callBack) => {
+        if(data.body.userType == 'customer') {
         async.waterfall([
             function(nextCb) {
-                registerModel.profileImageUpload(data, function(result) {
+                registerModel.customerProfileImageUpload(data, function(result) {
                     nextCb(null, result);
                 });
             }
@@ -186,5 +475,44 @@ module.exports = {
                 callBack(result);
             }
         });
+    } else if(data.body.userType == 'deliveryboy') {
+        async.waterfall([
+            function(nextCb) {
+                registerModel.deliveryboyProfileImageUpload(data, function(result) {
+                    nextCb(null, result);
+                });
+            }
+        ], function(err, result) {
+            if (err) {
+                callBack({
+                    success: false,
+                    STATUSCODE: 403,
+                    message: 'Request Forbidden',
+                    response_data: {}
+                })
+            } else {
+                callBack(result);
+            }
+        });
+    } else if(data.body.userType == 'vendorowner') {
+        async.waterfall([
+            function(nextCb) {
+                registerModel.vendorownerProfileImageUpload(data, function(result) {
+                    nextCb(null, result);
+                });
+            }
+        ], function(err, result) {
+            if (err) {
+                callBack({
+                    success: false,
+                    STATUSCODE: 403,
+                    message: 'Request Forbidden',
+                    response_data: {}
+                })
+            } else {
+                callBack(result);
+            }
+        });
+    }
     }
 }
