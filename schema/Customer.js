@@ -18,7 +18,7 @@ var customerSchema = new mongoose.Schema({
     verifyOtp: { type: String, enum: ['0', '1'], default: '0'},
     appType: { type: String, enum: ['IOS', 'ANDROID', 'BROWSER']},
     deviceToken: { type: String, default: '' },
-    loginType: { type: String, enum: ['NORMAL', 'FACEBOOK', 'GOOGLE']},
+    loginType: { type: String, default: 'GENERAL'},
 }, {
     timestamps: true
 });

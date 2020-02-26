@@ -79,7 +79,7 @@ module.exports = {
                                 //Description: Update Login Type
                                 var loginType = data.loginType;
                                 
-                                if (data.loginType == undefined) { //IF NO SOCIAL SIGN UP THEN GENERAL LOGIN
+                                if ((data.loginType == undefined) || (data.loginType == '')) { //IF NO SOCIAL SIGN UP THEN GENERAL LOGIN
                                     loginType = 'GENERAL';
                                 }
 
@@ -92,7 +92,7 @@ module.exports = {
                                     // Download to a directory and save with the original filename
                                     const options = {
                                         url: data.profileImage,
-                                        dest: `public/img/`   // Save to /path/to/dest/image.jpg
+                                        dest: `public/img/profile-pic/`   // Save to /path/to/dest/image.jpg
                                     }
                                     const FileType = require('file-type');
                                     download.image(options)
@@ -104,9 +104,9 @@ module.exports = {
         
                                                 var fs = require('fs');
         
-                                                var file_name = `profile-${Math.floor(Math.random() * 1000)}-${Math.floor(Date.now() / 1000)}.${fileExt}`;
+                                                var file_name = `customerprofile-${Math.floor(Math.random() * 1000)}-${Math.floor(Date.now() / 1000)}.${fileExt}`;
                                                 
-                                                let image_path = `public/img/${file_name}`;
+                                                let image_path = `public/img/profile-pic/${file_name}`;
         
                                                 fs.rename(filename, image_path, function (err) { //RENAME THE FILE
                                                     if (err) console.log('ERROR: ' + err);
@@ -124,7 +124,7 @@ module.exports = {
                                                         cityId: result.cityId,
                                                         location: result.location,
                                                         id: result._id,
-                                                        profileImage : `${config.serverhost}:${config.port}/img/` + file_name
+                                                        profileImage : `${config.serverhost}:${config.port}/img/profile-pic/` + file_name
                                                     },
                                                     authToken: authToken
                                                 }
@@ -230,7 +230,7 @@ module.exports = {
                                     cityId: result.cityId,
                                     location: result.location,
                                     id: result._id,
-                                    profileImage : `${config.serverhost}:${config.port}/img/` + result.profileImage
+                                    profileImage : `${config.serverhost}:${config.port}/img/profile-pic/` + result.profileImage
                                 },
                                 authToken: authToken
                             }
@@ -422,7 +422,7 @@ module.exports = {
                         }
 
                         if(customer.profileImage != '') {
-                            response.profileImage = `${config.serverhost}:${config.port}/img/` + customer.profileImage
+                            response.profileImage = `${config.serverhost}:${config.port}/img/profile-pic/` + customer.profileImage
                         } else {
                             response.profileImage = ''
                         }
@@ -433,6 +433,13 @@ module.exports = {
                             response_data: response
                         })
 
+                    }  else {
+                        callBack({
+                            success: false,
+                            STATUSCODE: 422,
+                            message: 'User not found',
+                            response_data: {}
+                        });
                     }
                 }
             });
@@ -559,6 +566,13 @@ module.exports = {
                                 response_data: {}
                             });
                         }
+                    }  else {
+                        callBack({
+                            success: false,
+                            STATUSCODE: 422,
+                            message: 'User not found',
+                            response_data: {}
+                        });
                     }
                 }
             });
@@ -583,7 +597,7 @@ module.exports = {
                     if (result) {
                         if (result.profileImage != '') {
                             var fs = require('fs');
-                            var filePath = `public/img/${result.profileImage}`;
+                            var filePath = `public/img/profile-pic/${result.profileImage}`;
                             fs.unlink(filePath, (err) => { });
                         }
 
@@ -593,10 +607,10 @@ module.exports = {
                         // The name of the input field (i.e. "image") is used to retrieve the uploaded file
                         let sampleFile = data.files.image;
 
-                        var file_name = `profile-${Math.floor(Math.random() * 1000)}-${Math.floor(Date.now() / 1000)}.${ext}`;
+                        var file_name = `customerprofile-${Math.floor(Math.random() * 1000)}-${Math.floor(Date.now() / 1000)}.${ext}`;
 
                         // Use the mv() method to place the file somewhere on your server
-                        sampleFile.mv(`public/img/${file_name}`, function (err) {
+                        sampleFile.mv(`public/img/profile-pic/${file_name}`, function (err) {
                             if (err) {
                                 callBack({
                                     success: false,
@@ -651,7 +665,7 @@ module.exports = {
                                     cityId: result.cityId,
                                     location: result.location,
                                     id: result._id,
-                                    profileImage : `${config.serverhost}:${config.port}/img/` + result.profileImage
+                                    profileImage : `${config.serverhost}:${config.port}/img/profile-pic/` + result.profileImage
                                 },
                                 authToken: authToken
                             }
@@ -843,7 +857,7 @@ module.exports = {
                         }
 
                         if(customer.profileImage != '') {
-                            response.profileImage = `${config.serverhost}:${config.port}/img/` + customer.profileImage
+                            response.profileImage = `${config.serverhost}:${config.port}/img/profile-pic/` + customer.profileImage
                         } else {
                             response.profileImage = ''
                         }
@@ -854,6 +868,13 @@ module.exports = {
                             response_data: response
                         })
 
+                    }  else {
+                        callBack({
+                            success: false,
+                            STATUSCODE: 422,
+                            message: 'User not found',
+                            response_data: {}
+                        });
                     }
                 }
             });
@@ -978,6 +999,13 @@ module.exports = {
                                 response_data: {}
                             });
                         }
+                    }  else {
+                        callBack({
+                            success: false,
+                            STATUSCODE: 422,
+                            message: 'User not found',
+                            response_data: {}
+                        });
                     }
                 }
             });
@@ -1002,7 +1030,7 @@ module.exports = {
                     if (result) {
                         if (result.profileImage != '') {
                             var fs = require('fs');
-                            var filePath = `public/img/${result.profileImage}`;
+                            var filePath = `public/img/profile-pic/${result.profileImage}`;
                             fs.unlink(filePath, (err) => { });
                         }
 
@@ -1015,7 +1043,7 @@ module.exports = {
                         var file_name = `dbprofile-${Math.floor(Math.random() * 1000)}-${Math.floor(Date.now() / 1000)}.${ext}`;
 
                         // Use the mv() method to place the file somewhere on your server
-                        sampleFile.mv(`public/img/${file_name}`, function (err) {
+                        sampleFile.mv(`public/img/profile-pic/${file_name}`, function (err) {
                             if (err) {
                                 callBack({
                                     success: false,
@@ -1070,7 +1098,7 @@ module.exports = {
                                     cityId: result.cityId,
                                     location: result.location,
                                     id: result._id,
-                                    profileImage : `${config.serverhost}:${config.port}/img/` + result.profileImage
+                                    profileImage : `${config.serverhost}:${config.port}/img/profile-pic/` + result.profileImage
                                 },
                                 authToken: authToken
                             }
@@ -1262,7 +1290,7 @@ module.exports = {
                         }
 
                         if(customer.profileImage != '') {
-                            response.profileImage = `${config.serverhost}:${config.port}/img/` + customer.profileImage
+                            response.profileImage = `${config.serverhost}:${config.port}/img/profile-pic/` + customer.profileImage
                         } else {
                             response.profileImage = ''
                         }
@@ -1273,6 +1301,13 @@ module.exports = {
                             response_data: response
                         })
 
+                    } else {
+                        callBack({
+                            success: false,
+                            STATUSCODE: 422,
+                            message: 'User not found',
+                            response_data: {}
+                        });
                     }
                 }
             });
@@ -1398,6 +1433,13 @@ module.exports = {
                                 response_data: {}
                             });
                         }
+                    }  else {
+                        callBack({
+                            success: false,
+                            STATUSCODE: 422,
+                            message: 'User not found',
+                            response_data: {}
+                        });
                     }
                 }
             });
@@ -1421,7 +1463,7 @@ module.exports = {
                     if (result) {
                         if (result.profileImage != '') {
                             var fs = require('fs');
-                            var filePath = `public/img/${result.profileImage}`;
+                            var filePath = `public/img/profile-pic/${result.profileImage}`;
                             fs.unlink(filePath, (err) => { });
                         }
 
@@ -1434,7 +1476,7 @@ module.exports = {
                         var file_name = `vendorprofile-${Math.floor(Math.random() * 1000)}-${Math.floor(Date.now() / 1000)}.${ext}`;
 
                         // Use the mv() method to place the file somewhere on your server
-                        sampleFile.mv(`public/img/${file_name}`, function (err) {
+                        sampleFile.mv(`public/img/profile-pic/${file_name}`, function (err) {
                             if (err) {
                                 callBack({
                                     success: false,
