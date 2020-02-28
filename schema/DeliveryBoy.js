@@ -4,8 +4,9 @@ var bcrypt = require('bcryptjs');
 var deliveryboySchema = new mongoose.Schema({
     firstName: { type: String, required: true },
     lastName: { type: String, required: true },
-    email: { type: String, required: true, unique: true },
-    phone: { type: Number, required: true },
+    email: { type: String, unique: true },
+    phone: { type: Number, unique: true  },
+    socialId: { type: String, unique: true },
     countryCode: { type: String, required: true },
     password: { type: String, required: true },
     cityId: { type: mongoose.Schema.Types.ObjectId },

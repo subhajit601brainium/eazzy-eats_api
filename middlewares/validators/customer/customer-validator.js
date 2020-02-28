@@ -5,20 +5,9 @@ module.exports = {
         const rules = joi.object({
             firstName: joi.string().required().error(new Error('First name is required')),
             lastName: joi.string().required().error(new Error('Last name is required')),
-            email: joi.string().required().email().error((err) => {
-                if (err[0].value === undefined || err[0].value === '' || err[0].value === null) {
-                    return new Error('Email is required');
-                } else {
-                    return new Error('Please enter valid email');
-                }
-            }),
-            phone: joi.number().required().error((err) => {
-                if (err[0].value === undefined || err[0].value === '' || err[0].value === null) {
-                    return new Error('Phone is required');
-                } else if (typeof err[0].value === 'string') {
-                    return new Error('Please enter valid phone');
-                }
-            }),
+            email: joi.string().email().error(new Error('Valid email is required')),
+            phone: joi.number().integer().error(new Error('Valid phone no is required')),
+            socialId: joi.string().allow('').optional(),
             countryCode: joi.string().required().error(new Error('Country code is required')),
             cityId: joi.string().required().error(new Error('City is reuired')),
             location: joi.string().allow('').optional(),

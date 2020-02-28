@@ -48,12 +48,36 @@ module.exports = {
                                             response_data: {}
                                         });
                                     } else {
-                                        nextCb(null, {
-                                            success: true,
-                                            STATUSCODE: 200,
-                                            message: 'success',
-                                            response_data: {}
-                                        })
+                                        if(data.socialId == undefined) {
+                                            data.socialId = '';
+                                        }
+                                        /** Check for customer existence */
+                                        customerSchema.countDocuments({ socialId: data.socialId }).exec(function (err, count) {
+                                            console.log('count',count);
+                                            if (err) {
+                                                nextCb(null, {
+                                                    success: false,
+                                                    STATUSCODE: 500,
+                                                    message: 'Internal DB error',
+                                                    response_data: {}
+                                                });
+                                            } if (count) {
+                                                nextCb(null, {
+                                                    success: false,
+                                                    STATUSCODE: 422,
+                                                    message: 'User already exists for this information.',
+                                                    response_data: {}
+                                                });
+                                            } else {
+                                                nextCb(null, {
+                                                    success: true,
+                                                    STATUSCODE: 200,
+                                                    message: 'success',
+                                                    response_data: {}
+                                                })
+                                            }
+                                        });
+
                                     }
                                 });
 
@@ -63,8 +87,6 @@ module.exports = {
                 },
                 function (arg1, nextCb) {
                     if (arg1.STATUSCODE === 200) {
-
-
                         new customerSchema(data).save(async function (err, result) {
                             if (err) {
                                 nextCb(null, {
@@ -78,7 +100,7 @@ module.exports = {
                                 //Date: 20/02/2020
                                 //Description: Update Login Type
                                 var loginType = data.loginType;
-                                
+
                                 if ((data.loginType == undefined) || (data.loginType == '')) { //IF NO SOCIAL SIGN UP THEN GENERAL LOGIN
                                     loginType = 'GENERAL';
                                 }
@@ -88,7 +110,7 @@ module.exports = {
                                 if (data.profileImage != '') { // IF SOCIAL PROFILE PIC PRESENT THEN UPLOAD IT IN OUR SERVER
 
                                     const download = require('image-downloader')
-        
+
                                     // Download to a directory and save with the original filename
                                     const options = {
                                         url: data.profileImage,
@@ -101,13 +123,13 @@ module.exports = {
                                                 var fileInfo = await FileType.fromFile(filename);
                                                 var fileExt = fileInfo.ext;
                                                 // console.log(fileExt);
-        
+
                                                 var fs = require('fs');
-        
+
                                                 var file_name = `customerprofile-${Math.floor(Math.random() * 1000)}-${Math.floor(Date.now() / 1000)}.${fileExt}`;
-                                                
+
                                                 let image_path = `public/img/profile-pic/${file_name}`;
-        
+
                                                 fs.rename(filename, image_path, function (err) { //RENAME THE FILE
                                                     if (err) console.log('ERROR: ' + err);
                                                 })
@@ -121,10 +143,11 @@ module.exports = {
                                                         lastName: result.lastName,
                                                         email: result.email,
                                                         phone: result.phone,
+                                                        socialId: result.socialId,
                                                         cityId: result.cityId,
                                                         location: result.location,
                                                         id: result._id,
-                                                        profileImage : `${config.serverhost}:${config.port}/img/profile-pic/` + file_name
+                                                        profileImage: `${config.serverhost}:${config.port}/img/profile-pic/` + file_name
                                                     },
                                                     authToken: authToken
                                                 }
@@ -139,7 +162,7 @@ module.exports = {
                                                     message: 'Registration Successfull',
                                                     response_data: response
                                                 })
-        
+
                                             })();
                                         })
                                 } else {
@@ -148,6 +171,7 @@ module.exports = {
                                             firstName: result.firstName,
                                             lastName: result.lastName,
                                             email: result.email,
+                                            socialId: result.socialId,
                                             phone: result.phone,
                                             cityId: result.cityId,
                                             location: result.location,
@@ -169,7 +193,7 @@ module.exports = {
                                     })
                                 }
 
-                                
+
 
 
                             }
@@ -205,11 +229,14 @@ module.exports = {
         if (data) {
             if (/^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/.test(data.user)) {
                 var loginCond = { email: data.user };
+            } else if(isNaN(data.user)){
+                var loginCond = { socialId: data.user };
             } else {
-                var loginCond = { phone: Number(data.user) };
+                var loginCond = { phone: data.user };
             }
             customerSchema.findOne(loginCond, function (err, result) {
                 if (err) {
+                    console.log(err);
                     callBack({
                         success: false,
                         STATUSCODE: 500,
@@ -226,11 +253,12 @@ module.exports = {
                                     firstName: result.firstName,
                                     lastName: result.lastName,
                                     email: result.email,
+                                    socialId: result.socialId,
                                     phone: result.phone,
                                     cityId: result.cityId,
                                     location: result.location,
                                     id: result._id,
-                                    profileImage : `${config.serverhost}:${config.port}/img/profile-pic/` + result.profileImage
+                                    profileImage: `${config.serverhost}:${config.port}/img/profile-pic/` + result.profileImage
                                 },
                                 authToken: authToken
                             }
@@ -421,7 +449,7 @@ module.exports = {
                             countryCode: customer.countryCode
                         }
 
-                        if(customer.profileImage != '') {
+                        if (customer.profileImage != '') {
                             response.profileImage = `${config.serverhost}:${config.port}/img/profile-pic/` + customer.profileImage
                         } else {
                             response.profileImage = ''
@@ -433,7 +461,7 @@ module.exports = {
                             response_data: response
                         })
 
-                    }  else {
+                    } else {
                         callBack({
                             success: false,
                             STATUSCODE: 422,
@@ -566,7 +594,7 @@ module.exports = {
                                 response_data: {}
                             });
                         }
-                    }  else {
+                    } else {
                         callBack({
                             success: false,
                             STATUSCODE: 422,
@@ -665,7 +693,7 @@ module.exports = {
                                     cityId: result.cityId,
                                     location: result.location,
                                     id: result._id,
-                                    profileImage : `${config.serverhost}:${config.port}/img/profile-pic/` + result.profileImage
+                                    profileImage: `${config.serverhost}:${config.port}/img/profile-pic/` + result.profileImage
                                 },
                                 authToken: authToken
                             }
@@ -856,7 +884,7 @@ module.exports = {
                             countryCode: customer.countryCode
                         }
 
-                        if(customer.profileImage != '') {
+                        if (customer.profileImage != '') {
                             response.profileImage = `${config.serverhost}:${config.port}/img/profile-pic/` + customer.profileImage
                         } else {
                             response.profileImage = ''
@@ -868,7 +896,7 @@ module.exports = {
                             response_data: response
                         })
 
-                    }  else {
+                    } else {
                         callBack({
                             success: false,
                             STATUSCODE: 422,
@@ -999,7 +1027,7 @@ module.exports = {
                                 response_data: {}
                             });
                         }
-                    }  else {
+                    } else {
                         callBack({
                             success: false,
                             STATUSCODE: 422,
@@ -1098,7 +1126,7 @@ module.exports = {
                                     cityId: result.cityId,
                                     location: result.location,
                                     id: result._id,
-                                    profileImage : `${config.serverhost}:${config.port}/img/profile-pic/` + result.profileImage
+                                    profileImage: `${config.serverhost}:${config.port}/img/profile-pic/` + result.profileImage
                                 },
                                 authToken: authToken
                             }
@@ -1271,7 +1299,7 @@ module.exports = {
     vendorownerViewProfile: (data, callBack) => {
         if (data) {
 
-            vendorOwnerSchema.findOne({ _id: data.customerId}, function (err, customer) {
+            vendorOwnerSchema.findOne({ _id: data.customerId }, function (err, customer) {
                 if (err) {
                     callBack({
                         success: false,
@@ -1289,7 +1317,7 @@ module.exports = {
                             countryCode: customer.countryCode
                         }
 
-                        if(customer.profileImage != '') {
+                        if (customer.profileImage != '') {
                             response.profileImage = `${config.serverhost}:${config.port}/img/profile-pic/` + customer.profileImage
                         } else {
                             response.profileImage = ''
@@ -1433,7 +1461,7 @@ module.exports = {
                                 response_data: {}
                             });
                         }
-                    }  else {
+                    } else {
                         callBack({
                             success: false,
                             STATUSCODE: 422,

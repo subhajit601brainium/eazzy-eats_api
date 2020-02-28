@@ -15,14 +15,17 @@ var app = express();
 
 //======== Create Server Starts =======//
 
-// var credentials = {
-//     key: fs.readFileSync('/etc/letsencrypt/live/nodeserver.brainiuminfotech.com/privkey.pem', 'utf8'),
-//     cert: fs.readFileSync('/etc/letsencrypt/live/nodeserver.brainiuminfotech.com/fullchain.pem', 'utf8')
-// };
+if (config.environment == 'staging') {
+    var credentials = {
+        key: fs.readFileSync('/etc/letsencrypt/live/nodeserver.brainiuminfotech.com/privkey.pem', 'utf8'),
+        cert: fs.readFileSync('/etc/letsencrypt/live/nodeserver.brainiuminfotech.com/fullchain.pem', 'utf8')
+    };
 
-// var server = https.createServer(credentials, app);
+    var server = https.createServer(credentials, app);
 
- var server = http.createServer(app);
+} else if (config.environment == 'development') {
+    var server = http.createServer(app);
+}
 
 //======== Create Server ends =======//
 
