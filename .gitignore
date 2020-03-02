@@ -1,2 +1,4 @@
 node_modules/
 package-lock.json
+public/img/profile-pic/*
+!public/img/profile-pic/empty

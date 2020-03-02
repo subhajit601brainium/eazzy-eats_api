@@ -236,7 +236,6 @@ module.exports = {
             }
             customerSchema.findOne(loginCond, function (err, result) {
                 if (err) {
-                    console.log(err);
                     callBack({
                         success: false,
                         STATUSCODE: 500,
@@ -668,9 +667,12 @@ module.exports = {
         if (data) {
             if (/^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/.test(data.user)) {
                 var loginCond = { email: data.user };
+            } else if(isNaN(data.user)){
+                var loginCond = { socialId: data.user };
             } else {
-                var loginCond = { phone: Number(data.user) };
+                var loginCond = { phone: data.user };
             }
+            
             deliveryBoySchema.findOne(loginCond, function (err, result) {
                 if (err) {
                     callBack({
@@ -1101,8 +1103,10 @@ module.exports = {
         if (data) {
             if (/^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/.test(data.user)) {
                 var loginCond = { email: data.user };
+            } else if(isNaN(data.user)){
+                var loginCond = { socialId: data.user };
             } else {
-                var loginCond = { phone: Number(data.user) };
+                var loginCond = { phone: data.user };
             }
             vendorOwnerSchema.findOne(loginCond, function (err, result) {
                 if (err) {

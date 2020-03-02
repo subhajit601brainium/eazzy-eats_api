@@ -101,7 +101,7 @@ server.listen(app.get('port'), function(err) {
     if (err) {
         throw err;
     } else {
-        console.log(`Easy eats server is running and listening to http://localhost:${app.get('port')} `);
+        console.log(`Easy eats server is running and listening to ${config.serverhost}:${app.get('port')} `);
     }
 });
 
