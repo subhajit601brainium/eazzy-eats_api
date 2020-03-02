@@ -25,7 +25,7 @@ module.exports = {
 
     customerLogin: (data, callBack) => {
 
-        if(data.userType == 'customer') {
+        if((data.userType == 'customer') || (data.userType == 'admin')) {
             async.waterfall([
                 function(nextCb) {
                     registerModel.customerLogin(data, function(result) {

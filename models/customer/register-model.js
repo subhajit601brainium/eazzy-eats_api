@@ -87,7 +87,9 @@ module.exports = {
                 },
                 function (arg1, nextCb) {
                     if (arg1.STATUSCODE === 200) {
-                        new customerSchema(data).save(async function (err, result) {
+                        var customerdata = data;
+                        customerdata.userType = 'CUSTOMER';
+                        new customerSchema(customerdata).save(async function (err, result) {
                             if (err) {
                                 nextCb(null, {
                                     success: false,
@@ -234,6 +236,13 @@ module.exports = {
             } else {
                 var loginCond = { phone: data.user };
             }
+
+            if(data.userType == 'customer') {
+                loginCond.userType = 'CUSTOMER'; //Customer Login
+            } else {
+                loginCond.userType = 'ADMIN'; // Admin Login
+            }
+
             customerSchema.findOne(loginCond, function (err, result) {
                 if (err) {
                     callBack({

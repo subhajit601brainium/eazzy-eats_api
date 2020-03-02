@@ -20,6 +20,7 @@ var customerSchema = new mongoose.Schema({
     appType: { type: String, enum: ['IOS', 'ANDROID', 'BROWSER']},
     deviceToken: { type: String, default: '' },
     loginType: { type: String, default: 'GENERAL'},
+    userType: { type: String, default: 'CUSTOMER'},
 }, {
     timestamps: true
 });
