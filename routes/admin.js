@@ -5,7 +5,9 @@ const categoryValidator = require('../middlewares/validators/admin/category-vali
 const adminStateService = require('../services/admin/state-service');
 const adminCityService = require('../services/admin/city-service');
 const adminCategoryService = require('../services/admin/category-service');
+const adminVendorService = require('../services/admin/vendor-service');
 const jwtTokenValidator = require('../middlewares/jwt-validation-middlewares');
+const vendorValidator = require('../middlewares/validators/admin/vendor-validator');
 
 var apiAdmin = express.Router();
 apiAdmin.use(express.json());
@@ -34,6 +36,34 @@ apiAdmin.post('/getAllCategories',jwtTokenValidator.validateToken, categoryValid
     adminCategoryService.getAllCategories(req.body, function(result) {
         res.status(200).send(result);
     })
-})
+});
+
+/** Vendor registration */
+apiAdmin.post('/registerVendor',jwtTokenValidator.validateToken, vendorValidator.addVendorValidator, function(req, res) {
+    adminVendorService.addVendor(req, function(result) {
+        res.status(200).send(result);
+    })
+});
+
+/** Vendor time registration */
+apiAdmin.post('/registerVendorTime',jwtTokenValidator.validateToken, vendorValidator.addVendorTimeValidator, function(req, res) {
+    adminVendorService.addVendorTime(req, function(result) {
+        res.status(200).send(result);
+    })
+});
+
+/** Vendor Owner registration */
+apiAdmin.post('/registerVendorOwner',jwtTokenValidator.validateToken, vendorValidator.vendorOwnerRegisterValidator, function(req, res) {
+    adminVendorService.vendorOwnerRegister(req.body, function(result) {
+        res.status(200).send(result);
+    })
+});
+
+/** Item Add */
+apiAdmin.post('/addItem',jwtTokenValidator.validateToken, vendorValidator.itemAddValidator, function(req, res) {
+    adminVendorService.addItem(req, function(result) {
+        res.status(200).send(result);
+    })
+});
 
 module.exports = apiAdmin;

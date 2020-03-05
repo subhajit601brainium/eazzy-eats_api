@@ -2,11 +2,11 @@ var mongoose = require('mongoose');
 var bcrypt = require('bcryptjs');
 
 var vendorOwnerSchema = new mongoose.Schema({
+    vendorId: { type: mongoose.Schema.Types.ObjectId, required: true },
     firstName: { type: String, required: true },
     lastName: { type: String, required: true },
     email: { type: String, unique: true },
     phone: { type: Number, unique: true  },
-    socialId: { type: String, unique: true },
     countryCode: { type: String, required: true },
     password: { type: String, required: true },
     cityId: { type: mongoose.Schema.Types.ObjectId },
@@ -19,7 +19,6 @@ var vendorOwnerSchema = new mongoose.Schema({
     verifyOtp: { type: String, enum: ['0', '1'], default: '0'},
     appType: { type: String, enum: ['IOS', 'ANDROID', 'BROWSER']},
     deviceToken: { type: String, default: '' },
-    loginType: { type: String, enum: ['NORMAL', 'FACEBOOK', 'GOOGLE']}
 }, {
     timestamps: true
 });

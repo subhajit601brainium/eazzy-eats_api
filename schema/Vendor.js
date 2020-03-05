@@ -7,18 +7,17 @@ var vendorSchema = new mongoose.Schema({
     contactEmail: { type: String, email: true, unique: true },
     contactPhone: { type: Number, unique: true },
     logo: { type: String, required: true },
-    banner: { type: String, default: '' },
+    licenceImage: { type: String, default: ''},
     location: {
         type: {
             type: String,
-            enum: ['Point'],
-            required: true
+            enum: ['Point']
         },
         coordinates: {
-            type: [Number],
-            required: true
+            type: [Number]
         }
     },
+    isActive: { type: Boolean, default: false },
 }, {
     timestamps: true
 });
