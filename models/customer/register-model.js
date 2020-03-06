@@ -48,35 +48,47 @@ module.exports = {
                                             response_data: {}
                                         });
                                     } else {
-                                        if(data.socialId == undefined) {
+                                        if (data.socialId == undefined) {
                                             data.socialId = '';
                                         }
-                                        /** Check for customer existence */
-                                        customerSchema.countDocuments({ socialId: data.socialId }).exec(function (err, count) {
-                                            console.log('count',count);
-                                            if (err) {
-                                                nextCb(null, {
-                                                    success: false,
-                                                    STATUSCODE: 500,
-                                                    message: 'Internal DB error',
-                                                    response_data: {}
-                                                });
-                                            } if (count) {
-                                                nextCb(null, {
-                                                    success: false,
-                                                    STATUSCODE: 422,
-                                                    message: 'User already exists for this information.',
-                                                    response_data: {}
-                                                });
-                                            } else {
-                                                nextCb(null, {
-                                                    success: true,
-                                                    STATUSCODE: 200,
-                                                    message: 'success',
-                                                    response_data: {}
-                                                })
-                                            }
-                                        });
+
+                                        if (data.socialId == '') {
+                                            nextCb(null, {
+                                                success: true,
+                                                STATUSCODE: 200,
+                                                message: 'success',
+                                                response_data: {}
+                                            })
+                                        } else {
+                                            /** Check for customer existence */
+                                            customerSchema.countDocuments({ socialId: data.socialId }).exec(function (err, count) {
+                                                if (err) {
+                                                    nextCb(null, {
+                                                        success: false,
+                                                        STATUSCODE: 500,
+                                                        message: 'Internal DB error',
+                                                        response_data: {}
+                                                    });
+                                                } if (count) {
+                                                    console.log(count);
+                                                    nextCb(null, {
+                                                        success: false,
+                                                        STATUSCODE: 422,
+                                                        message: 'User already exists for this information.',
+                                                        response_data: {}
+                                                    });
+                                                } else {
+                                                    nextCb(null, {
+                                                        success: true,
+                                                        STATUSCODE: 200,
+                                                        message: 'success',
+                                                        response_data: {}
+                                                    })
+                                                }
+                                            });
+
+                                        }
+
 
                                     }
                                 });
@@ -88,7 +100,6 @@ module.exports = {
                 function (arg1, nextCb) {
                     if (arg1.STATUSCODE === 200) {
                         var customerdata = data;
-                        customerdata.userType = 'CUSTOMER';
                         new customerSchema(customerdata).save(async function (err, result) {
                             if (err) {
                                 nextCb(null, {
@@ -146,10 +157,9 @@ module.exports = {
                                                         email: result.email,
                                                         phone: result.phone,
                                                         socialId: result.socialId,
-                                                        cityId: result.cityId,
-                                                        location: result.location,
                                                         id: result._id,
-                                                        profileImage: `${config.serverhost}:${config.port}/img/profile-pic/` + file_name
+                                                        profileImage: `${config.serverhost}:${config.port}/img/profile-pic/` + file_name,
+                                                        userType: 'customer'
                                                     },
                                                     authToken: authToken
                                                 }
@@ -173,12 +183,11 @@ module.exports = {
                                             firstName: result.firstName,
                                             lastName: result.lastName,
                                             email: result.email,
-                                            socialId: result.socialId,
                                             phone: result.phone,
-                                            cityId: result.cityId,
-                                            location: result.location,
+                                            socialId: result.socialId,
                                             id: result._id,
-                                            profileImage: ''
+                                            profileImage: '',
+                                            userType: 'customer'
                                         },
                                         authToken: authToken
                                     }
@@ -229,19 +238,25 @@ module.exports = {
     },
     customerLogin: (data, callBack) => {
         if (data) {
-            if (/^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/.test(data.user)) {
-                var loginCond = { email: data.user };
-            } else if(isNaN(data.user)){
+
+            var loginUser = '';
+
+
+            if (data.loginType != 'EMAIL') {
+                loginUser = 'SOCIAL';
                 var loginCond = { socialId: data.user };
             } else {
-                var loginCond = { phone: data.user };
+                if (/^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/.test(data.user)) {
+                    var loginCond = { email: data.user };
+                    loginUser = 'EMAIL';
+                } else {
+                    var loginCond = { phone: data.user };
+                    loginUser = 'PHONE';
+                }
             }
 
-            if(data.userType == 'customer') {
-                loginCond.userType = 'CUSTOMER'; //Customer Login
-            } else {
-                loginCond.userType = 'ADMIN'; // Admin Login
-            }
+
+
 
             customerSchema.findOne(loginCond, function (err, result) {
                 if (err) {
@@ -253,20 +268,18 @@ module.exports = {
                     });
                 } else {
                     if (result) {
-                        const comparePass = bcrypt.compareSync(data.password, result.password);
-                        if (comparePass) {
+                        if (loginUser == 'SOCIAL') { //IF SOCIAL LOGIN THEN NO NEED TO CHECK THE PASSWORD 
                             const authToken = generateToken(result);
                             let response = {
                                 userDetails: {
                                     firstName: result.firstName,
                                     lastName: result.lastName,
                                     email: result.email,
-                                    socialId: result.socialId,
                                     phone: result.phone,
-                                    cityId: result.cityId,
-                                    location: result.location,
+                                    socialId: result.socialId,
                                     id: result._id,
-                                    profileImage: `${config.serverhost}:${config.port}/img/profile-pic/` + result.profileImage
+                                    profileImage: `${config.serverhost}:${config.port}/img/profile-pic/` + result.profileImage,
+                                    userType: data.userType
                                 },
                                 authToken: authToken
                             }
@@ -278,6 +291,58 @@ module.exports = {
                                 response_data: response
                             })
 
+                        } else { //NORMAL LOGIN
+                            if ((data.password == '') || (data.password == undefined)) {
+                                callBack({
+                                    success: false,
+                                    STATUSCODE: 422,
+                                    message: 'Password is required',
+                                    response_data: {}
+                                });
+                            } else {
+
+                                const comparePass = bcrypt.compareSync(data.password, result.password);
+                                if (comparePass) {
+                                    const authToken = generateToken(result);
+                                    let response = {
+                                        userDetails: {
+                                            firstName: result.firstName,
+                                            lastName: result.lastName,
+                                            email: result.email,
+                                            phone: result.phone,
+                                            socialId: result.socialId,
+                                            id: result._id,
+                                            profileImage: `${config.serverhost}:${config.port}/img/profile-pic/` + result.profileImage,
+                                            userType: data.userType
+                                        },
+                                        authToken: authToken
+                                    }
+
+                                    callBack({
+                                        success: true,
+                                        STATUSCODE: 200,
+                                        message: 'Login Successfull',
+                                        response_data: response
+                                    })
+
+                                } else {
+                                    callBack({
+                                        success: false,
+                                        STATUSCODE: 422,
+                                        message: 'Invalid email or password',
+                                        response_data: {}
+                                    });
+                                }
+                            }
+                        }
+                    } else {
+                        if ((data.loginType != 'EMAIL') && (loginUser == 'SOCIAL')) {
+                            callBack({
+                                success: true,
+                                STATUSCODE: 201,
+                                message: 'New User',
+                                response_data: {}
+                            });
                         } else {
                             callBack({
                                 success: false,
@@ -286,13 +351,7 @@ module.exports = {
                                 response_data: {}
                             });
                         }
-                    } else {
-                        callBack({
-                            success: false,
-                            STATUSCODE: 422,
-                            message: 'Invalid email or password',
-                            response_data: {}
-                        });
+
                     }
                 }
             })
@@ -676,8 +735,6 @@ module.exports = {
         if (data) {
             if (/^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/.test(data.user)) {
                 var loginCond = { email: data.user };
-            } else if(isNaN(data.user)){
-                var loginCond = { socialId: data.user };
             } else {
                 var loginCond = { phone: data.user };
             }
@@ -1112,8 +1169,6 @@ module.exports = {
         if (data) {
             if (/^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/.test(data.user)) {
                 var loginCond = { email: data.user };
-            } else if(isNaN(data.user)){
-                var loginCond = { socialId: data.user };
             } else {
                 var loginCond = { phone: data.user };
             }

@@ -6,7 +6,6 @@ var deliveryboySchema = new mongoose.Schema({
     lastName: { type: String, required: true },
     email: { type: String, unique: true },
     phone: { type: Number, unique: true  },
-    socialId: { type: String, unique: true },
     countryCode: { type: String, required: true },
     password: { type: String, required: true },
     cityId: { type: mongoose.Schema.Types.ObjectId },

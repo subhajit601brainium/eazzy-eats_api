@@ -18,8 +18,11 @@ var vendorSchema = new mongoose.Schema({
         }
     },
     isActive: { type: Boolean, default: false },
+    vendorOpenCloseTime: [{ type: mongoose.Schema.Types.ObjectId, ref: 'vendorOpenCloseTime' }]
 }, {
     timestamps: true
 });
+
+vendorSchema.index({ location: "2dsphere" });
 
 module.exports = mongoose.model('Vendor', vendorSchema);

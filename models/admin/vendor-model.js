@@ -90,7 +90,7 @@ module.exports = {
                                                     success: true,
                                                     STATUSCODE: 200,
                                                     message: 'Vendor information uploaded Successfully',
-                                                    response_data: {}
+                                                    response_data: result.vendorId
                                                 })
                                             }
                                         });
@@ -247,6 +247,7 @@ module.exports = {
                                 type: 'Point',
                                 coordinates: [reqBody.longitude, reqBody.latitude]
                             }
+                            var vendorTimeArray = [];
 
                             vandorTimeSchema.insertMany(restaurantTimeValArr, function (err, result) {
                                 if (err) {
@@ -258,6 +259,12 @@ module.exports = {
                                         response_data: {}
                                     });
                                 } else {
+                                    if(result) {
+                                        for(let resultVal of result) {
+                                            vendorTimeArray.push(resultVal._id);
+                                        }
+                                        updateVendor.vendorOpenCloseTime = vendorTimeArray;
+                                    }
 
                                     vendorSchema.update({ _id: reqBody.vendorId }, {
                                         $set: updateVendor
@@ -270,14 +277,12 @@ module.exports = {
                                                 response_data: {}
                                             });
                                         } else {
-
                                             callBack({
                                                 success: true,
                                                 STATUSCODE: 200,
                                                 message: 'Vendor time data added succsessfully.',
                                                 response_data: {}
                                             });
-
                                         }
                                     });
                                 }
@@ -468,15 +473,15 @@ module.exports = {
                                             console.log('Extra Item name should be string and price should be number');
                                             validateJson++;
                                         }
-            
+
                                     } else {
                                         console.log('Extra Item name and price required');
                                         validateJson++;
                                     }
                                 }
-            
+
                                 if (validateJson == 0) {
-                                    
+
                                     ItemExtraSchema.insertMany(itemExtraArr, function (err, result) {
                                         if (err) {
                                             console.log(err);
@@ -495,7 +500,7 @@ module.exports = {
                                             })
                                         }
                                     });
-            
+
                                 } else {
                                     callBack({
                                         success: false,

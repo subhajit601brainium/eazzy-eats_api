@@ -2,3 +2,5 @@ node_modules/
 package-lock.json
 public/img/profile-pic/*
 !public/img/profile-pic/empty
+public/img/vendor/*
+!public/img/vendor/empty

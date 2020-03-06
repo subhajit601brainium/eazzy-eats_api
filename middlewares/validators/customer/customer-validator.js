@@ -33,15 +33,27 @@ module.exports = {
                 message: value.error.message
             })
         } else {
-            next();
+            if((req.body.socialId == '') && (req.body.password == '')) {
+                res.status(422).json({
+                    success: false,
+                    STATUSCODE: 422,
+                    message: 'Password is required'
+                });
+            } else {
+                next();
+            }
+            
         }
     },
 
     customerLogin: async (req, res, next) => {
+        const userTypeVal = ["customer", "deliveryboy", "vendorowner"];
+        const loginTypeVal = ["FACEBOOK", "GOOGLE", "EMAIL"];
         const rules = joi.object({
             user: joi.string().required().error(new Error('Email/phone is required')),
-            password: joi.string().required().error(new Error('Password is required')),
-            userType: joi.string().required().error(new Error('Please send userType'))
+            password: joi.string().allow('').optional(),
+            userType: joi.string().required().valid(...userTypeVal).error(new Error('Please send valid userType')),
+            loginType: joi.string().required().valid(...loginTypeVal).error(new Error('Please send valid loginType'))
         });
 
         const value = await rules.validate(req.body);
@@ -58,6 +70,7 @@ module.exports = {
     },
 
     forgotPasswordEmail: async (req, res, next) => {
+        const userTypeVal = ["customer", "deliveryboy", "vendorowner"];
         const rules = joi.object({
             email: joi.string().required().email().error((err) => {
                 if (err[0].value === undefined || err[0].value === '' || err[0].value === null) {
@@ -66,7 +79,7 @@ module.exports = {
                     return new Error('Please enter valid email');
                 }
             }),
-            userType: joi.string().required().error(new Error('Please send userType'))
+            userType: joi.string().required().valid(...userTypeVal).error(new Error('Please send userType'))
         });
 
         const value = await rules.validate(req.body);
@@ -82,6 +95,7 @@ module.exports = {
     },
 
     resetPassword: async (req, res, next) => {
+        const userTypeVal = ["customer", "deliveryboy", "vendorowner"];
         const rules = joi.object({
             email: joi.string().required().email().error((err) => {
                 if (err[0].value === undefined || err[0].value === '' || err[0].value === null) {
@@ -98,7 +112,7 @@ module.exports = {
                     return new Error('Password and confirm password must match');
                 }
             }),
-            userType: joi.string().required().error(new Error('Please send userType'))
+            userType: joi.string().required().valid(...userTypeVal).error(new Error('Please send userType'))
         });
 
         const value = await rules.validate(req.body);
@@ -114,6 +128,7 @@ module.exports = {
     },
 
     resendForgotPassOtp: async (req, res, next) => {
+        const userTypeVal = ["customer", "deliveryboy", "vendorowner"];
         const rules = joi.object({
             email: joi.string().required().email().error((err) => {
                 if (err[0].value === undefined || err[0].value === '' || err[0].value === null) {
@@ -122,7 +137,7 @@ module.exports = {
                     return new Error('Please enter valid email');
                 }
             }),
-            userType: joi.string().required().error(new Error('Please send userType'))
+            userType: joi.string().required().valid(...userTypeVal).error(new Error('Please send userType'))
         });
 
         const value = await rules.validate(req.body);
@@ -137,9 +152,10 @@ module.exports = {
         }
     },
     viewProfile: async (req, res, next) => {
+        const userTypeVal = ["customer", "deliveryboy", "vendorowner"];
         const rules = joi.object({
             customerId: joi.string().required().error(new Error('Customer id is required')),
-            userType: joi.string().required().error(new Error('Please send userType'))
+            userType: joi.string().required().valid(...userTypeVal).error(new Error('Please send userType'))
         });
 
         const value = await rules.validate(req.body);
@@ -154,6 +170,7 @@ module.exports = {
         }
     },
     editProfile: async (req, res, next) => {
+        const userTypeVal = ["customer", "deliveryboy", "vendorowner"];
         const rules = joi.object({
             customerId: joi.string().required().error(new Error('Customer id is required')),
             firstName: joi.string().required().error(new Error('First name is required')),
@@ -173,7 +190,7 @@ module.exports = {
                     return new Error('Please enter valid phone');
                 }
             }),
-            userType: joi.string().required().error(new Error('Please send userType'))
+            userType: joi.string().required().valid(...userTypeVal).error(new Error('Please send userType'))
         });
 
         const value = await rules.validate(req.body);
@@ -188,6 +205,7 @@ module.exports = {
         }
     },
     changePassword: async (req, res, next) => {
+        const userTypeVal = ["customer", "deliveryboy", "vendorowner"];
         const rules = joi.object({
             customerId: joi.string().required().error(new Error('Customer id is required')),
             oldPassword: joi.string().required().error(new Error('Old password is required')),
@@ -205,7 +223,7 @@ module.exports = {
                     return new Error('New password and confirm password must match');
                 }
             }),
-            userType: joi.string().required().error(new Error('Please send userType'))
+            userType: joi.string().required().valid(...userTypeVal).error(new Error('Please send userType'))
         });
 
         const value = await rules.validate(req.body);
@@ -220,11 +238,12 @@ module.exports = {
         }
     },
     profileImageUpload: async (req, res, next) => {
+        const userTypeVal = ["customer", "deliveryboy", "vendorowner"];
        // console.log(req.body);
        // console.log(req.files);
         const rules = joi.object({
             customerId: joi.string().required().error(new Error('Customer id is required')),
-            userType: joi.string().required().error(new Error('Please send userType'))
+            userType: joi.string().required().valid(...userTypeVal).error(new Error('Please send userType'))
         });
         const imageRules = joi.object({
             image: joi.object().required().error(new Error('Image is required')),
