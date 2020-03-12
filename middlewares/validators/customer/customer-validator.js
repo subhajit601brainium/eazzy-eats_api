@@ -11,7 +11,7 @@ module.exports = {
             countryCode: joi.string().required().error(new Error('Country code is required')),
             cityId: joi.string().required().error(new Error('City is reuired')),
             location: joi.string().allow('').optional(),
-            password: joi.string().required().error(new Error('Password is required')),
+            password: joi.string().allow('').optional(),
             confirmPassword: joi.string().valid(joi.ref('password')).required().error(err => {
                 if (err[0].value === undefined || err[0].value === '' || err[0].value === null) {
                     return new Error('Confirm password is required');
@@ -47,7 +47,7 @@ module.exports = {
     },
 
     customerLogin: async (req, res, next) => {
-        const userTypeVal = ["customer", "deliveryboy", "vendorowner"];
+        const userTypeVal = ["customer", "deliveryboy", "vendorowner","admin"];
         const loginTypeVal = ["FACEBOOK", "GOOGLE", "EMAIL"];
         const rules = joi.object({
             user: joi.string().required().error(new Error('Email/phone is required')),
@@ -190,7 +190,8 @@ module.exports = {
                     return new Error('Please enter valid phone');
                 }
             }),
-            userType: joi.string().required().valid(...userTypeVal).error(new Error('Please send userType'))
+            userType: joi.string().required().valid(...userTypeVal).error(new Error('Please send userType')),
+            loginType: joi.string().required().error(new Error('Please send valid loginType'))
         });
 
         const value = await rules.validate(req.body);

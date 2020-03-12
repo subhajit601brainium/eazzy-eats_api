@@ -82,5 +82,12 @@ customerApi.post('/dashboard',jwtTokenValidator.validateToken,restaurantValidato
     });
 })
 
+/** Restaurant Details */
+customerApi.post('/vendorDetails',jwtTokenValidator.validateToken,restaurantValidator.restaurantDetailsValidator, function(req, res) {
+    restaurantService.restaurantDetails(req.body, function(result) {
+        res.status(200).send(result);
+    });
+})
+
 
 module.exports = customerApi;

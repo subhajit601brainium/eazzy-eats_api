@@ -3,6 +3,7 @@ var config = {
     serverhost: 'http://localhost',
     environment: 'development', //development,staging,live
     secretKey: 'hyrgqwjdfbw4534efqrwer2q38945765',
+    restaurantSearchDistance: 10000,
     production: {
         username: 'brain1uMMong0User',
         password: 'PL5qnU9nuvX0pBa',
