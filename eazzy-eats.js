@@ -9,9 +9,11 @@ var http = require('http');
 var https = require('https');
 const config = require('./config');
 const mongoose = require('mongoose');
+var cors = require('cors');
 const corsMiddleWare = require('./middlewares/cors-middleware');
 
 var app = express();
+app.use(cors());
 
 //======== Create Server Starts =======//
 

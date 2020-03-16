@@ -47,6 +47,27 @@ customerApi.post('/resendForgotPassOtp', customerValidator.resendForgotPassOtp, 
     });
 })
 
+/** Forgot Password Admin */
+customerApi.post('/forgotPasswordAdmin', customerValidator.forgotPasswordEmail, function(req, res) {
+    registerService.forgotPasswordAdmin(req.body, function(result) {
+        res.status(200).send(result);
+    })
+});
+
+/** Reset Password Admin */
+customerApi.post('/resetPasswordAdmin', customerValidator.resetPasswordAdmin, function(req, res) {
+    registerService.resetPasswordAdmin(req.body, function(result) {
+        res.status(200).send(result);
+    });
+});
+
+/** Change password Admin */
+customerApi.post('/changePasswordAdmin',jwtTokenValidator.validateToken, customerValidator.changePassword, function(req, res) {
+    registerService.changePasswordAdmin(req.body, function(result) {
+        res.status(200).send(result);
+    });
+})
+
 /** View Profile */
 customerApi.post('/viewProfile',jwtTokenValidator.validateToken, customerValidator.viewProfile, function(req, res) {
     registerService.viewProfile(req.body, function(result) {

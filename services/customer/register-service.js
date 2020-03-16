@@ -514,5 +514,68 @@ module.exports = {
             }
         });
     }
-    }
+    }, 
+    forgotPasswordAdmin: (data, callBack) => {
+            async.waterfall([
+                function(nextCb) {
+                    registerModel.adminForgotPassword(data, function(result) {
+                        nextCb(null, result);
+                    });
+                }
+            ], function(err, result) {
+                if (err) {
+                    callBack({
+                        success: false,
+                        STATUSCODE: 403,
+                        message: 'Request Forbidden',
+                        response_data: {}
+                    })
+                } else {
+                    callBack(result);
+                }
+            });
+        
+    },
+    resetPasswordAdmin: (data, callBack) => {
+        async.waterfall([
+            function(nextCb) {
+                registerModel.adminResetPassword(data, function(result) {
+                    nextCb(null, result);
+                });
+            }
+        ], function(err, result) {
+            if (err) {
+                callBack({
+                    success: false,
+                    STATUSCODE: 403,
+                    message: 'Request Forbidden',
+                    response_data: {}
+                })
+            } else {
+                callBack(result);
+            }
+        });
+    
+    },
+    changePasswordAdmin: (data, callBack) => {
+        async.waterfall([
+            function(nextCb) {
+                registerModel.adminChangePassword(data, function(result) {
+                    nextCb(null, result);
+                });
+            }
+        ], function(err, result) {
+            if (err) {
+                callBack({
+                    success: false,
+                    STATUSCODE: 403,
+                    message: 'Request Forbidden',
+                    response_data: {}
+                })
+            } else {
+                callBack(result);
+            }
+        });
+    
+    },
 }

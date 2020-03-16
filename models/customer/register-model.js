@@ -45,7 +45,7 @@ module.exports = {
 
                     } else {
                         /** Check for customer existence */
-                        customerSchema.countDocuments({ email: data.email,loginType:'GENERAL' }).exec(function (err, count) {
+                        customerSchema.countDocuments({ email: data.email, loginType: 'GENERAL' }).exec(function (err, count) {
                             if (err) {
                                 console.log(err);
                                 nextCb(null, {
@@ -63,7 +63,7 @@ module.exports = {
                                         response_data: {}
                                     });
                                 } else {
-                                    customerSchema.countDocuments({ phone: data.phone,loginType:'GENERAL' }).exec(function (err, count) {
+                                    customerSchema.countDocuments({ phone: data.phone, loginType: 'GENERAL' }).exec(function (err, count) {
                                         if (err) {
                                             console.log(err);
                                             nextCb(null, {
@@ -248,16 +248,13 @@ module.exports = {
                 var loginCond = { socialId: data.user };
             } else {
                 if (/^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/.test(data.user)) {
-                    var loginCond = { email: data.user };
+                    var loginCond = { email: data.user,loginType: 'GENERAL'};
                     loginUser = 'EMAIL';
                 } else {
-                    var loginCond = { phone: data.user };
+                    var loginCond = { phone: data.user,loginType: 'GENERAL'};
                     loginUser = 'PHONE';
                 }
             }
-
-
-
 
             customerSchema.findOne(loginCond, function (err, result) {
                 if (err) {
@@ -294,6 +291,7 @@ module.exports = {
                             })
 
                         } else { //NORMAL LOGIN
+                            console.log('hello');
                             if ((data.password == '') || (data.password == undefined)) {
                                 callBack({
                                     success: false,
@@ -302,7 +300,6 @@ module.exports = {
                                     response_data: {}
                                 });
                             } else {
-
                                 const comparePass = bcrypt.compareSync(data.password, result.password);
                                 if (comparePass) {
                                     const authToken = generateToken(result);
@@ -362,7 +359,7 @@ module.exports = {
     },
     customerForgotPassword: (data, callBack) => {
         if (data) {
-            customerSchema.findOne({ email: data.email,loginType:'GENERAL'}, function (err, customer) {
+            customerSchema.findOne({ email: data.email, loginType: 'GENERAL' }, function (err, customer) {
                 if (err) {
                     callBack({
                         success: false,
@@ -403,7 +400,7 @@ module.exports = {
     },
     customerResetPassword: (data, callBack) => {
         if (data) {
-            customerSchema.findOne({ email: data.email,loginType:'GENERAL' }, { _id: 1 }, function (err, customer) {
+            customerSchema.findOne({ email: data.email, loginType: 'GENERAL' }, { _id: 1 }, function (err, customer) {
                 if (err) {
                     callBack({
                         success: false,
@@ -459,7 +456,7 @@ module.exports = {
     },
     customerResendForgotPasswordOtp: (data, callBack) => {
         if (data) {
-            customerSchema.findOne({ email: data.email,loginType:'GENERAL'}, function (err, customer) {
+            customerSchema.findOne({ email: data.email, loginType: 'GENERAL' }, function (err, customer) {
                 if (err) {
                     callBack({
                         success: false,
@@ -549,7 +546,7 @@ module.exports = {
             /** Check for customer existence */
             console.log(data.customerId);
             console.log(data.email);
-            customerSchema.countDocuments({ email: data.email,loginType: data.loginType, _id: { $ne: data.customerId } }).exec(function (err, count) {
+            customerSchema.countDocuments({ email: data.email, loginType: data.loginType, _id: { $ne: data.customerId } }).exec(function (err, count) {
                 if (err) {
                     callBack({
                         success: false,
@@ -566,7 +563,7 @@ module.exports = {
                             response_data: {}
                         });
                     } else {
-                        customerSchema.countDocuments({ phone: data.phone,loginType: data.loginType, _id: { $ne: data.customerId } }).exec(function (err, count) {
+                        customerSchema.countDocuments({ phone: data.phone, loginType: data.loginType, _id: { $ne: data.customerId } }).exec(function (err, count) {
                             if (err) {
                                 callBack({
                                     success: false,
@@ -741,7 +738,7 @@ module.exports = {
             } else {
                 var loginCond = { phone: data.user };
             }
-            
+
             deliveryBoySchema.findOne(loginCond, function (err, result) {
                 if (err) {
                     callBack({
@@ -1599,7 +1596,194 @@ module.exports = {
 
 
         }
+    },
+    //Admin
+    adminForgotPassword: (data, callBack) => {
+        if (data) {
+            customerSchema.findOne({ email: data.email, userType: 'admin' }, function (err, customer) {
+                if (err) {
+                    callBack({
+                        success: false,
+                        STATUSCODE: 500,
+                        message: 'Internal DB error',
+                        response_data: {}
+                    });
+                } else {
+                    if (customer) {
+                        var passwordReset = {};
+                        passwordReset.password = generatePassword();
+                        passwordReset.firstName = customer.firstName;
+                        passwordReset.email = customer.email;
+                        passwordReset.adminLink = `${config.adminUrl}forgotpassword/${customer._id}`;
+
+                        try {
+                            mail('forgotPasswordAdminMail')(customer.email, passwordReset).send();
+                            callBack({
+                                success: true,
+                                STATUSCODE: 200,
+                                message: 'Please check your email to setup your password.',
+                                response_data: {}
+                            });
+                        } catch (Error) {
+                            console.log(Error);
+                            console.log('Something went wrong while sending email');
+                        }
+
+
+                    } else {
+                        callBack({
+                            success: false,
+                            STATUSCODE: 422,
+                            message: 'User not found',
+                            response_data: {}
+                        });
+                    }
+                }
+            })
+        }
+    },
+    adminResetPassword: (data, callBack) => {
+        if (data) {
+            customerSchema.findOne({ _id: data.id, userType: 'admin' }, function (err, customer) {
+                if (err) {
+                    callBack({
+                        success: false,
+                        STATUSCODE: 500,
+                        message: 'Internal DB error',
+                        response_data: {}
+                    });
+                } else {
+                    if (customer) {
+                       // console.log(customer);
+                        console.log(data.password);
+                        bcrypt.hash(data.password, 8, function (err, hash) {
+                            if (err) {
+                                callBack({
+                                    success: false,
+                                    STATUSCODE: 500,
+                                    message: 'Something went wrong while setting the password',
+                                    response_data: {}
+                                });
+                            } else {
+                                console.log(hash);
+                                console.log(customer._id);
+                                customerSchema.update({ _id: customer._id }, {
+                                    $set: {
+                                        password: hash
+                                    }
+                                }, function (err, res) {
+                                    if (err) {
+                                        callBack({
+                                            success: false,
+                                            STATUSCODE: 500,
+                                            message: 'Internal DB error',
+                                            response_data: {}
+                                        });
+                                    } else {
+                                        console.log(res);
+                                        callBack({
+                                            success: true,
+                                            STATUSCODE: 200,
+                                            message: 'Password Changed successfully.',
+                                            response_data: {}
+                                        })
+                                    }
+                                })
+                            }
+                        })
+                    } else {
+                        callBack({
+                            success: false,
+                            STATUSCODE: 422,
+                            message: 'User not found',
+                            response_data: {}
+                        });
+                    }
+                }
+            })
+        }
+    },
+    adminChangePassword: (data, callBack) => {
+        if (data) {
+            customerSchema.findOne({ _id: data.customerId }, function (err, result) {
+                if (err) {
+                    callBack({
+                        success: false,
+                        STATUSCODE: 500,
+                        message: 'Internal DB error',
+                        response_data: {}
+                    });
+                } else {
+                    if (result) {
+                        const comparePass = bcrypt.compareSync(data.oldPassword, result.password);
+                        if (comparePass) {
+
+                            bcrypt.hash(data.newPassword, 8, function (err, hash) {
+                                if (err) {
+                                    callBack({
+                                        success: false,
+                                        STATUSCODE: 500,
+                                        message: 'Something went wrong while setting the password',
+                                        response_data: {}
+                                    });
+                                } else {
+                                    customerSchema.update({ _id: data.customerId }, {
+                                        $set: {
+                                            password: hash
+                                        }
+                                    }, function (err, res) {
+                                        if (err) {
+                                            callBack({
+                                                success: false,
+                                                STATUSCODE: 500,
+                                                message: 'Internal DB error',
+                                                response_data: {}
+                                            });
+                                        } else {
+                                            callBack({
+                                                success: true,
+                                                STATUSCODE: 200,
+                                                message: 'Password updated successfully',
+                                                response_data: {}
+                                            });
+                                        }
+                                    })
+                                }
+                            })
+                        } else {
+                            callBack({
+                                success: false,
+                                STATUSCODE: 422,
+                                message: 'Invalid old password',
+                                response_data: {}
+                            });
+                        }
+                    } else {
+                        callBack({
+                            success: false,
+                            STATUSCODE: 422,
+                            message: 'User not found',
+                            response_data: {}
+                        });
+                    }
+                }
+            });
+
+
+
+
+        }
+    },
+}
+
+function generatePassword() {
+    var length = 8,
+        charset = "abcdefghijklmnop1234567890qrstuvwxyzABCDEFGH1234567890IJKLMNOPQRSTUVWXYZ0123456789",
+        retVal = "";
+    for (var i = 0, n = charset.length; i < length; ++i) {
+        retVal += charset.charAt(Math.floor(Math.random() * n));
     }
+    return retVal;
 }
 
 function generateToken(userData) {
