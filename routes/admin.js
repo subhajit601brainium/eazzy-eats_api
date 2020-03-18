@@ -26,8 +26,9 @@ apiAdmin.post('/addCity', cityValidator.addCityValidator, function(req, res) {
     })
 });
 
+
 apiAdmin.post('/addCategory',jwtTokenValidator.validateToken, categoryValidator.addCategoryValidator, function(req, res) {
-    adminCategoryService.addCategory(req.body, function(result) {
+    adminCategoryService.addCategory(req, function(result) {
         res.status(200).send(result);
     })
 });

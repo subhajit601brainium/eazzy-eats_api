@@ -2,6 +2,7 @@ var mongoose = require('mongoose');
 
 var categorySchema = new mongoose.Schema({
     categoryName: { type: String, required: true },
+    image: { type: String, required: true },
 }, {
     timestamps: true
 });
