@@ -8,6 +8,7 @@ var vendorSchema = new mongoose.Schema({
     contactEmail: { type: String, email: true, unique: true },
     contactPhone: { type: Number, unique: true },
     logo: { type: String, required: true },
+    banner: { type: String, required: true },
     rating: { type: Number, default: 0 },
     licenceImage: { type: String, default: ''},
     location: {

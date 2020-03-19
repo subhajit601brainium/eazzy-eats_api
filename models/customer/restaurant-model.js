@@ -150,7 +150,8 @@ module.exports = {
                                     name: results.restaurantName,
                                     description: results.description,
                                     rating: results.rating,
-                                    logo: results.logo,
+                                    logo:  `${config.serverhost}:${config.port}/img/vendor/${results.logo}`,
+                                    banner: `${config.serverhost}:${config.port}/img/vendor/${results.banner}`
                                 };
 
                                 //Calculate Distance
@@ -160,9 +161,6 @@ module.exports = {
                                 var destLat = latt;
                                 var destLong = long;
                                 restaurantInfo.distance = await getDistanceinMtr(sourceLat, sourceLong, destLat, destLong);
-
-                                //Banner
-                                restaurantInfo.banner = '';
 
                                 //Open time
                                 var vendorTimeArr = [];
@@ -386,6 +384,7 @@ function restaurantCategoryItem(vendorId, categoryId) {
                                 itemsObj.itemName = itemsVal.itemName
                                 itemsObj.type = itemsVal.type
                                 itemsObj.price = itemsVal.price
+                                itemsObj.description = itemsVal.description
                                 itemsObj.menuImage = `${config.serverhost}:${config.port}/img/vendor/${itemsVal.menuImage}`;
 
                                 itemsArr.push(itemsObj);
@@ -406,6 +405,7 @@ function restaurantCategoryItem(vendorId, categoryId) {
                                     itemsObj.itemName = itemsVal.itemName
                                     itemsObj.type = itemsVal.type
                                     itemsObj.price = itemsVal.price
+                                    itemsObj.description = itemsVal.description
                                     itemsObj.menuImage = `${config.serverhost}:${config.port}/img/vendor/${itemsVal.menuImage}`;
 
                                     itemsArr.push(itemsObj);

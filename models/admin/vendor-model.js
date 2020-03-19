@@ -36,84 +36,170 @@ module.exports = {
                             response_data: {}
                         });
                     } else {
-                        //Logo Upload
-                        if (files.logo != undefined) {
-                            var logoInfo = await uploadvendorImage(files.logo, 'logo');
-                        }
 
-                        if (logoInfo != 'error') {
-                            // console.log(logoInfo);
-                            var vendorUpData = {
-                                restaurantName: reqBody.restaurantName,
-                                managerName: reqBody.managerName,
-                                restaurantType: reqBody.restaurantType,
-                                contactEmail: reqBody.restaurantEmail,
-                                contactPhone: reqBody.restaurantPhone,
-                                logo: logoInfo,
-                                licenceImage: '',
-                                isActive: false
-                            };
-                            new vendorSchema(vendorUpData).save(async function (err, result) {
-                                if (err) {
-                                    console.log(err);
+
+
+                        /** Check for customer existence */
+                        vendorOwnerSchema.countDocuments({ email: reqBody.email }).exec(function (err, count) {
+                            if (err) {
+                                console.log(err);
+                                callBack({
+                                    success: false,
+                                    STATUSCODE: 500,
+                                    message: 'Internal DB error',
+                                    response_data: {}
+                                });
+                            } else {
+                                if (count) {
                                     callBack({
                                         success: false,
-                                        STATUSCODE: 500,
-                                        message: 'Internal DB error',
+                                        STATUSCODE: 422,
+                                        message: 'User already exists for this email',
                                         response_data: {}
                                     });
                                 } else {
+                                    vendorOwnerSchema.countDocuments({ phone: reqBody.phone }).exec(async function (err, count) {
+                                        if (err) {
+                                            console.log(err);
+                                            callBack({
+                                                success: false,
+                                                STATUSCODE: 500,
+                                                message: 'Internal DB error',
+                                                response_data: {}
+                                            });
 
-                                    //Banner Upload
-                                    if (files.logo != undefined) {
-                                        var bannerInfo = await uploadvendorImage(data.files.banner, 'banner');
-                                    }
+                                        } if (count) {
+                                            callBack({
+                                                success: false,
+                                                STATUSCODE: 422,
+                                                message: 'User already exists for this phone no.',
+                                                response_data: {}
+                                            });
+                                        } else {
 
-                                    if (bannerInfo != 'error') {
+                                            //Logo Upload
+                                            if (files.logo != undefined) {
+                                                var logoInfo = await uploadvendorImage(files.logo, 'logo');
 
-                                        var bannerData = {
-                                            vendorId: result._id,
-                                            bannerType: 'HAPPY HOURS',
-                                            image: bannerInfo
-                                        }
-                                        new bannerSchema(bannerData).save(async function (err, result) {
-                                            if (err) {
-                                                console.log(err);
+                                                var detailsInfo = await uploadvendorImage(files.banner, 'detailsbanner');
+                                            }
+
+                                            if ((logoInfo != 'error') && (detailsInfo != 'error')) {
+                                                // console.log(logoInfo);
+
+                                                if(reqBody.isActive == 'ACTIVE') {
+                                                    var resStatus = true;
+                                                } else {
+                                                    var resStatus = false;
+                                                }
+                        
+
+                                                var vendorUpData = {
+                                                    restaurantName: reqBody.restaurantName,
+                                                    managerName: reqBody.managerName,
+                                                    restaurantType: reqBody.restaurantType,
+                                                    contactEmail: reqBody.restaurantEmail,
+                                                    contactPhone: reqBody.restaurantPhone,
+                                                    description: reqBody.description,
+                                                    logo: logoInfo,
+                                                    banner: detailsInfo,
+                                                    licenceImage: '',
+                                                    location : {
+                                                        type: 'Point',
+                                                        coordinates: [reqBody.longitude, reqBody.latitude]
+                                                    },
+                                                    isActive: resStatus,
+                                                    rating: 0
+                                                };
+                                                new vendorSchema(vendorUpData).save(async function (err, result) {
+                                                    if (err) {
+                                                        console.log(err);
+                                                        callBack({
+                                                            success: false,
+                                                            STATUSCODE: 500,
+                                                            message: 'Internal DB error',
+                                                            response_data: {}
+                                                        });
+                                                    } else {
+
+                                                        //Offer Banner Upload
+                                                        if (files.offer_banner != undefined) {
+                                                            var bannerInfo = await uploadvendorImage(data.files.offer_banner, 'offer_banner');
+                                                        }
+
+                                                        if (bannerInfo != 'error') {
+                                                            var vendorId = result._id;
+                                                            var bannerData = {
+                                                                vendorId: vendorId,
+                                                                bannerType: 'HAPPY HOURS',
+                                                                image: bannerInfo
+                                                            }
+                                                            //BANNER ADD
+                                                            new bannerSchema(bannerData).save(async function (err, result) {
+                                                                if (err) {
+                                                                    console.log(err);
+                                                                    callBack({
+                                                                        success: false,
+                                                                        STATUSCODE: 500,
+                                                                        message: 'Internal DB error',
+                                                                        response_data: {}
+                                                                    });
+                                                                } else {
+                                                                    var vendorOwner = {
+                                                                        vendorId: vendorId,
+                                                                        firstName: reqBody.firstName,
+                                                                        lastName: reqBody.lastName,
+                                                                        email: reqBody.email,
+                                                                        phone: reqBody.phone,
+                                                                        location: reqBody.location,
+                                                                        isActive: true
+                                                                    }
+                                                                    //VENDOR OWNER ADD
+                                                                    new vendorOwnerSchema(vendorOwner).save(async function (err, result) {
+                                                                        if (err) {
+                                                                            console.log(err);
+                                                                            callBack({
+                                                                                success: false,
+                                                                                STATUSCODE: 500,
+                                                                                message: 'Internal DB error',
+                                                                                response_data: {}
+                                                                            });
+                                                                        } else {
+                                                                            callBack({
+                                                                                success: true,
+                                                                                STATUSCODE: 200,
+                                                                                message: 'Vendor Owner added Successfull',
+                                                                                response_data: result
+                                                                            })
+                                                                        }
+                                                                    });
+                                                                }
+                                                            });
+
+                                                        } else { //IF SOMEHOW BANNER UPLOAD FAILED
+                                                            callBack({
+                                                                success: false,
+                                                                STATUSCODE: 500,
+                                                                message: 'Internal error, Something went wrong.',
+                                                                response_data: {}
+                                                            });
+                                                        }
+                                                    }
+                                                });
+                                            } else { //IF SOMEHOW LOGO UPLOAD FAILED
                                                 callBack({
                                                     success: false,
                                                     STATUSCODE: 500,
-                                                    message: 'Internal DB error',
+                                                    message: 'Internal error, Something went wrong.',
                                                     response_data: {}
                                                 });
-                                            } else {
-                                                callBack({
-                                                    success: true,
-                                                    STATUSCODE: 200,
-                                                    message: 'Vendor information uploaded Successfully',
-                                                    response_data: result.vendorId
-                                                })
                                             }
-                                        });
+                                        }
+                                    });
 
-                                    } else { //IF SOMEHOW BANNER UPLOAD FAILED
-                                        callBack({
-                                            success: false,
-                                            STATUSCODE: 500,
-                                            message: 'Internal error, Something went wrong.',
-                                            response_data: {}
-                                        });
-                                    }
                                 }
-                            });
-                        } else { //IF SOMEHOW LOGO UPLOAD FAILED
-                            callBack({
-                                success: false,
-                                STATUSCODE: 500,
-                                message: 'Internal error, Something went wrong.',
-                                response_data: {}
-                            });
-                        }
-
+                            }
+                        });
                     }
 
                 }
@@ -259,8 +345,8 @@ module.exports = {
                                         response_data: {}
                                     });
                                 } else {
-                                    if(result) {
-                                        for(let resultVal of result) {
+                                    if (result) {
+                                        for (let resultVal of result) {
                                             vendorTimeArray.push(resultVal._id);
                                         }
                                         updateVendor.vendorOpenCloseTime = vendorTimeArray;
@@ -418,7 +504,12 @@ module.exports = {
 
 
             if (checkJson == true) {
-                var itemExtraObj = JSON.parse(itemExtra);
+                if(itemExtra != '') {
+                    var itemExtraObj = JSON.parse(itemExtra);
+                } else {
+                    var itemExtraObj = [];
+                }
+                
 
                 //License Upload
                 if (files.menuImage != undefined) {

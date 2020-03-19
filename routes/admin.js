@@ -40,6 +40,7 @@ apiAdmin.post('/getAllCategories',jwtTokenValidator.validateToken, categoryValid
 });
 
 /** Vendor registration */
+//,
 apiAdmin.post('/registerVendor',jwtTokenValidator.validateToken, vendorValidator.addVendorValidator, function(req, res) {
     adminVendorService.addVendor(req, function(result) {
         res.status(200).send(result);

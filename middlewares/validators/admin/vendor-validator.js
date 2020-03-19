@@ -6,11 +6,22 @@ module.exports = {
             customerId: joi.string().required().error(new Error('Customer id is required')),
             restaurantName: joi.string().required().error(new Error('Restaurant name is required')),
             managerName: joi.string().required().error(new Error('Manager name is required')),
+            description: joi.string().allow('').optional(),
             restaurantType: joi.string().required().error(new Error('Restaurant type is required')),
             restaurantEmail: joi.string().email().error(new Error('Valid email is required')),
             restaurantPhone: joi.number().integer().error(new Error('Valid phone no is required')),
+            latitude: joi.string().required().error(new Error('User latitude required')),
+            longitude: joi.string().required().error(new Error('User longitude required')),
             logo: joi.string().allow('').optional(),
-            banner: joi.string().allow('').optional()
+            banner: joi.string().allow('').optional(),
+            offer_banner: joi.string().allow('').optional(),
+            isActive: joi.string().required().error(new Error('Please select restaurant status.')),
+
+            firstName: joi.string().required().error(new Error('First name is required')),
+            lastName: joi.string().required().error(new Error('Last name is required')),
+            email: joi.string().email().error(new Error('Valid email is required')),
+            phone: joi.number().integer().error(new Error('Valid phone no is required')),
+            location: joi.string().allow('').optional()
         });
 
         
@@ -90,6 +101,7 @@ module.exports = {
             vendorId: joi.string().required().error(new Error('Vendor id is required')),
             categoryId: joi.string().required().error(new Error('Category id is required')),
             itemName: joi.string().required().error(new Error('Item name is required')),
+            description: joi.string().allow('').optional(),
             type: joi.string().valid(...itemType).error(new Error('Item Type is required')),
             waitingTime: joi.string().allow('').optional(),
             menuImage: joi.string().allow('').optional(),

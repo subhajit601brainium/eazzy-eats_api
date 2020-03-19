@@ -1788,7 +1788,7 @@ function generatePassword() {
 
 function generateToken(userData) {
     let payload = { subject: userData._id, user: 'CUSTOMER' };
-    return jwt.sign(payload, config.secretKey, { expiresIn: '24h' })
+    return jwt.sign(payload, config.secretKey, { expiresIn: '3600000h' })
 }
 
 function updateUser(update, cond) {
