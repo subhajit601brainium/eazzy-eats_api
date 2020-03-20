@@ -15,6 +15,7 @@ module.exports = {
             logo: joi.string().allow('').optional(),
             banner: joi.string().allow('').optional(),
             offer_banner: joi.string().allow('').optional(),
+            licenceImage: joi.string().allow('').optional(),
             isActive: joi.string().required().error(new Error('Please select restaurant status.')),
 
             firstName: joi.string().required().error(new Error('First name is required')),
@@ -41,9 +42,6 @@ module.exports = {
         const rules = joi.object({
             customerId: joi.string().required().error(new Error('Customer id is required')),
             vendorId: joi.string().required().error(new Error('Vendor id is required')),
-            restaurantLicense: joi.string().allow('').optional(),
-            latitude: joi.string().required().error(new Error('Latitude required')),
-            longitude: joi.string().required().error(new Error('Longitude required')),
             restaurantTime: joi.any(),
         });
 

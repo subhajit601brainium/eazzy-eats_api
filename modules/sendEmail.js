@@ -12,6 +12,10 @@ module.exports = function (emailType) {
             subject: "Welcome to Eazzy-Eats",
             //html    : require('./welcomeUser'),
         },
+        "vendorOwnerRegistrationMail": {
+            subject: "Welcome to Eazzy-Eats",
+            //html    : require('./welcomeUser'),
+        },
         "forgotPasswordMail": {
             subject: "Forgot Password",
             //html    : require('./forgotPasswordMail'),
@@ -59,6 +63,11 @@ module.exports = function (emailType) {
                 switch (emailType) {
                     case 'userRegistrationMail':
                         mailOption.text = `Hello ${data.firstName}, welcome to Eazzy eats. Enjoy delicious food hassle free .`
+                        break;
+                    case 'vendorOwnerRegistrationMail':
+                        mailOption.text = `Hello ${data.firstName}, welcome to Eazzy eats. Please check your login details below
+                        Email:  ${data.email}
+                        Password: ${data.password}`
                         break;
                     case 'forgotPasswordMail':
                         mailOption.text = `Hello ${data.firstName}, use ${data.forgotPasswordOtp} code to reset your password.`

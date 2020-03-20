@@ -77,22 +77,23 @@ module.exports = {
                                             });
                                         } else {
 
-                                            //Logo Upload
-                                            if (files.logo != undefined) {
-                                                var logoInfo = await uploadvendorImage(files.logo, 'logo');
+                                            //Image Upload
+                                            var logoInfo = await uploadvendorImage(files.logo, 'logo');
 
-                                                var detailsInfo = await uploadvendorImage(files.banner, 'detailsbanner');
-                                            }
+                                            var detailsInfo = await uploadvendorImage(files.banner, 'detailsbanner');
 
-                                            if ((logoInfo != 'error') && (detailsInfo != 'error')) {
+                                            var licenseInfo = await uploadvendorImage(files.licenceImage, 'licence');
+
+
+                                            if ((logoInfo != 'error') && (detailsInfo != 'error') && (licenseInfo != 'error')) {
                                                 // console.log(logoInfo);
 
-                                                if(reqBody.isActive == 'ACTIVE') {
+                                                if (reqBody.isActive == 'ACTIVE') {
                                                     var resStatus = true;
                                                 } else {
                                                     var resStatus = false;
                                                 }
-                        
+
 
                                                 var vendorUpData = {
                                                     restaurantName: reqBody.restaurantName,
@@ -103,8 +104,8 @@ module.exports = {
                                                     description: reqBody.description,
                                                     logo: logoInfo,
                                                     banner: detailsInfo,
-                                                    licenceImage: '',
-                                                    location : {
+                                                    licenceImage: licenseInfo,
+                                                    location: {
                                                         type: 'Point',
                                                         coordinates: [reqBody.longitude, reqBody.latitude]
                                                     },
@@ -145,11 +146,13 @@ module.exports = {
                                                                         response_data: {}
                                                                     });
                                                                 } else {
+                                                                    var ownerPassword = generatePassword();
                                                                     var vendorOwner = {
                                                                         vendorId: vendorId,
                                                                         firstName: reqBody.firstName,
                                                                         lastName: reqBody.lastName,
                                                                         email: reqBody.email,
+                                                                        password : ownerPassword,
                                                                         phone: reqBody.phone,
                                                                         location: reqBody.location,
                                                                         isActive: true
@@ -165,12 +168,19 @@ module.exports = {
                                                                                 response_data: {}
                                                                             });
                                                                         } else {
-                                                                            callBack({
-                                                                                success: true,
-                                                                                STATUSCODE: 200,
-                                                                                message: 'Vendor Owner added Successfull',
-                                                                                response_data: result
-                                                                            })
+
+                                                                            try {
+                                                                                mail('vendorOwnerRegistrationMail')(reqBody.email, vendorOwner).send();
+                                                                                callBack({
+                                                                                    success: true,
+                                                                                    STATUSCODE: 200,
+                                                                                    message: 'Vendor related information added Successfull',
+                                                                                    response_data: result
+                                                                                })
+                                                                            } catch (Error) {
+                                                                                console.log(Error);
+                                                                                console.log('Something went wrong while sending email');
+                                                                            } 
                                                                         }
                                                                     });
                                                                 }
@@ -207,10 +217,12 @@ module.exports = {
         }
     },
     //Vendor Time Add 
-    addVendorTime: async (data, callBack) => {
-        if (data) {
-            var files = data.files;
-            var reqBody = data.body;
+    addVendorTime: async (reqBody, callBack) => {
+        if (reqBody) {
+            // var files = data.files;
+            //   var reqBody = data.body;
+            // console.log(reqBody);
+            // return;
             var validDays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
             var validZone = ['AM', 'PM'];
             console.log(reqBody);
@@ -218,6 +230,7 @@ module.exports = {
 
             //CHECK if Restaurant Time data is valid Json or not
             var checkJson = await isJson(restaurantTime);
+
 
             if (checkJson == true) {
                 var restaurantTimeObj = JSON.parse(restaurantTime);
@@ -316,76 +329,56 @@ module.exports = {
                         // console.log('validateData', validateData);
                         // console.log(restaurantTimeValArr);
 
-                        //UPDATE LOCATION AND LICENSE IN VENDOR TABLE
-
-                        //License Upload
-                        if (files.restaurantLicense != undefined) {
-                            var licenseInfo = await uploadvendorImage(files.restaurantLicense, 'restaurantLicense');
+                        var updateVendor = {
+                            isActive: true
                         }
 
-                        if (licenseInfo != 'error') {
-                            var updateVendor = {
-                                image: licenseInfo,
-                                isActive: true
-                            }
-                            //Location
-                            updateVendor.location = {
-                                type: 'Point',
-                                coordinates: [reqBody.longitude, reqBody.latitude]
-                            }
-                            var vendorTimeArray = [];
+                        var vendorTimeArray = [];
 
-                            vandorTimeSchema.insertMany(restaurantTimeValArr, function (err, result) {
-                                if (err) {
-                                    console.log(err);
-                                    callBack({
-                                        success: false,
-                                        STATUSCODE: 500,
-                                        message: 'Internal DB error',
-                                        response_data: {}
-                                    });
-                                } else {
-                                    if (result) {
-                                        for (let resultVal of result) {
-                                            vendorTimeArray.push(resultVal._id);
-                                        }
-                                        updateVendor.vendorOpenCloseTime = vendorTimeArray;
+                        vandorTimeSchema.insertMany(restaurantTimeValArr, function (err, result) {
+                            if (err) {
+                                console.log(err);
+                                callBack({
+                                    success: false,
+                                    STATUSCODE: 500,
+                                    message: 'Internal DB error',
+                                    response_data: {}
+                                });
+                            } else {
+                                if (result) {
+                                    for (let resultVal of result) {
+                                        vendorTimeArray.push(resultVal._id);
                                     }
-
-                                    vendorSchema.update({ _id: reqBody.vendorId }, {
-                                        $set: updateVendor
-                                    }, function (err, res) {
-                                        if (err) {
-                                            callBack({
-                                                success: false,
-                                                STATUSCODE: 500,
-                                                message: 'Internal DB error',
-                                                response_data: {}
-                                            });
-                                        } else {
-                                            callBack({
-                                                success: true,
-                                                STATUSCODE: 200,
-                                                message: 'Vendor time data added succsessfully.',
-                                                response_data: {}
-                                            });
-                                        }
-                                    });
+                                    updateVendor.vendorOpenCloseTime = vendorTimeArray;
                                 }
 
-                            });
+                                vendorSchema.update({ _id: reqBody.vendorId }, {
+                                    $set: updateVendor
+                                }, function (err, res) {
+                                    if (err) {
+                                        callBack({
+                                            success: false,
+                                            STATUSCODE: 500,
+                                            message: 'Internal DB error',
+                                            response_data: {}
+                                        });
+                                    } else {
+                                        callBack({
+                                            success: true,
+                                            STATUSCODE: 200,
+                                            message: 'Vendor time data added succsessfully.',
+                                            response_data: {}
+                                        });
+                                    }
+                                });
+                            }
+
+                        });
 
 
 
 
-                        } else {
-                            callBack({
-                                success: false,
-                                STATUSCODE: 500,
-                                message: 'Restaurant License image upload failed.',
-                                response_data: {}
-                            });
-                        }
+
 
                     } else {
                         callBack({
@@ -405,8 +398,6 @@ module.exports = {
                     });
                 }
 
-                console.log();
-                return;
             } else {
                 callBack({
                     success: false,
@@ -504,12 +495,12 @@ module.exports = {
 
 
             if (checkJson == true) {
-                if(itemExtra != '') {
+                if (itemExtra != '') {
                     var itemExtraObj = JSON.parse(itemExtra);
                 } else {
                     var itemExtraObj = [];
                 }
-                
+
 
                 //License Upload
                 if (files.menuImage != undefined) {
@@ -572,7 +563,7 @@ module.exports = {
                                 }
 
                                 if (validateJson == 0) {
-
+                                    console.log('extra', itemExtraArr);
                                     ItemExtraSchema.insertMany(itemExtraArr, function (err, result) {
                                         if (err) {
                                             console.log(err);
@@ -600,6 +591,13 @@ module.exports = {
                                         response_data: {}
                                     });
                                 }
+                            } else {
+                                callBack({
+                                    success: true,
+                                    STATUSCODE: 200,
+                                    message: 'Item added Successfull',
+                                    response_data: result
+                                })
                             }
 
                         }
@@ -660,4 +658,14 @@ function isJson(str) {
         return false;
     }
     return true;
+}
+
+function generatePassword() {
+    var length = 8,
+        charset = "abcdefghijklmnop1234567890qrstuvwxyzABCDEFGH1234567890IJKLMNOPQRSTUVWXYZ0123456789",
+        retVal = "";
+    for (var i = 0, n = charset.length; i < length; ++i) {
+        retVal += charset.charAt(Math.floor(Math.random() * n));
+    }
+    return retVal;
 }

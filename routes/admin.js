@@ -49,7 +49,7 @@ apiAdmin.post('/registerVendor',jwtTokenValidator.validateToken, vendorValidator
 
 /** Vendor time registration */
 apiAdmin.post('/registerVendorTime',jwtTokenValidator.validateToken, vendorValidator.addVendorTimeValidator, function(req, res) {
-    adminVendorService.addVendorTime(req, function(result) {
+    adminVendorService.addVendorTime(req.body, function(result) {
         res.status(200).send(result);
     })
 });
