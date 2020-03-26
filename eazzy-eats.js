@@ -60,6 +60,9 @@ app.use('/api/admin', adminRoutes);
 const customerRoutes = require('./routes/customers');
 app.use('/api/customer',customerRoutes);
 
+const vendorRoutes = require('./routes/vendors');
+app.use('/api/vendor',vendorRoutes);
+
 // app.use('/', indexRouter);
 // app.use('/users', usersRouter);
 

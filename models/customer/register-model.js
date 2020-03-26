@@ -795,7 +795,7 @@ module.exports = {
     },
     deliveryboyForgotPassword: (data, callBack) => {
         if (data) {
-            deliveryBoySchema.findOne({ email: data.email }, function (err, customer) {
+            deliveryBoySchema.findOne({ email: data.email}, function (err, customer) {
                 if (err) {
                     callBack({
                         success: false,
@@ -1189,12 +1189,15 @@ module.exports = {
                                 userDetails: {
                                     firstName: result.firstName,
                                     lastName: result.lastName,
+                                    vendorId: result.vendorId,
                                     email: result.email,
                                     phone: result.phone.toString(),
                                     cityId: result.cityId,
                                     location: result.location,
                                     id: result._id,
-                                    profileImage: `${config.serverhost}:${config.port}/img/profile-pic/` + result.profileImage
+                                    profileImage: '',
+                                    userType: data.userType,
+                                    loginType: data.loginType
                                 },
                                 authToken: authToken
                             }
@@ -1253,7 +1256,12 @@ module.exports = {
                                 }
                             });
                         } catch (Error) {
-                            console.log('Something went wrong while sending email');
+                            callBack({
+                                success: false,
+                                STATUSCODE: 500,
+                                message: 'Something went wrong while sending email.',
+                                response_data: {}
+                            });
                         }
                     } else {
                         callBack({
@@ -1412,7 +1420,6 @@ module.exports = {
     },
     vendorownerEditProfile: (data, callBack) => {
         if (data) {
-            console.log(data);
             /** Check for customer existence */
             vendorOwnerSchema.countDocuments({ email: data.email, _id: { $ne: data.customerId } }).exec(function (err, count) {
                 if (err) {
