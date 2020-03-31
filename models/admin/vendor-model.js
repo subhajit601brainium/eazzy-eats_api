@@ -620,6 +620,35 @@ module.exports = {
             }
 
         }
+    },
+    //Vendor Info
+    getVendorInfo: async (data, callBack) => {
+        if (data) {
+            console.log(data.body);
+            var vendorId = data.body.vendorId;
+
+            /** Check for vendor existence */
+            vendorSchema.findOne({_id: vendorId}, async function (err, respons) {
+                if (err) {
+                    console.log(err);
+                    callBack({
+                        success: false,
+                        STATUSCODE: 500,
+                        message: 'Internal DB error',
+                        response_data: {}
+                    });
+                } else {
+
+                    callBack({
+                        success: true,
+                        STATUSCODE: 200,
+                        message: 'Vendor Data.',
+                        response_data: respons
+                    });
+                }
+
+            });
+        }
     }
 }
 

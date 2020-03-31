@@ -81,5 +81,25 @@ module.exports = {
                 callBack(result);
             }
         })
+    },
+    getVendorInfo: (data, callBack) => {
+        async.waterfall([
+            function(nextCb) {
+                vendorModel.getVendorInfo(data, function(result) {
+                    nextCb(null, result);
+                })
+            }
+        ], function(err, result) {
+            if (err) {
+                callBack({
+                    success: false,
+                    STATUSCODE: 403,
+                    message: 'Request Forbidden',
+                    response_data: {}
+                })
+            } else {
+                callBack(result);
+            }
+        })
     }
 }

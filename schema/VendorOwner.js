@@ -18,7 +18,7 @@ var vendorOwnerSchema = new mongoose.Schema({
     otp: { type: String, default: '' },
     verifyOtp: { type: String, enum: ['0', '1'], default: '0'},
     appType: { type: String, enum: ['IOS', 'ANDROID', 'BROWSER']},
-    deviceToken: { type: String, default: '' },
+    deviceToken: { type: String, default: '' }
 }, {
     timestamps: true
 });

@@ -68,4 +68,14 @@ apiAdmin.post('/addItem',jwtTokenValidator.validateToken, vendorValidator.itemAd
     })
 });
 
+/** Item Add */
+apiAdmin.post('/getVendorInfo',jwtTokenValidator.validateToken, vendorValidator.getVendorInfoValidator, function(req, res) {
+    adminVendorService.getVendorInfo(req, function(result) {
+        res.status(200).send(result);
+    })
+});
+
+
+
+
 module.exports = apiAdmin;

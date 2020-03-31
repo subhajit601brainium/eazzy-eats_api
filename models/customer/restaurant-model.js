@@ -3,6 +3,9 @@ var vendorFavouriteSchema = require('../../schema/VendorFavourite');
 var categorySchema = require('../../schema/Category');
 var bannerSchema = require('../../schema/Banner');
 var itemSchema = require('../../schema/Item');
+
+var orderSchema = require('../../schema/Order');
+var OrderDetailSchema = require('../../schema/OrderDetail');
 var config = require('../../config');
 
 module.exports = {
@@ -107,7 +110,7 @@ module.exports = {
                 });
         }
     },
-    //Customer Home/Dashboard API
+    //Customer Restaurant details API
     restaurantDetails: (data, callBack) => {
         if (data) {
 
@@ -150,7 +153,7 @@ module.exports = {
                                     name: results.restaurantName,
                                     description: results.description,
                                     rating: results.rating,
-                                    logo:  `${config.serverhost}:${config.port}/img/vendor/${results.logo}`,
+                                    logo: `${config.serverhost}:${config.port}/img/vendor/${results.logo}`,
                                     banner: `${config.serverhost}:${config.port}/img/vendor/${results.banner}`
                                 };
 
@@ -248,7 +251,7 @@ module.exports = {
                                 }
 
                                 responseDt.vendorTime = vendorTimeArr;
-                                
+
 
                                 //Get Item Details
                                 var restaurantItemDetails = await restaurantCategoryItem(vendorId, categoryId);
@@ -320,6 +323,181 @@ module.exports = {
                         });
                     });
             }
+
+
+        }
+    },
+    //Customer Post Order API
+    postOrder: (data, callBack) => {
+        if (data) {
+            // console.log(data);
+
+            var vendorId = data.vendorId;
+            var items = data.items;
+            var latt = data.latitude;
+            var long = data.longitude;
+
+            var checkJson = false
+
+            var checkJson = isJson(items);
+
+            if (checkJson == true) {
+
+                var itemObj = JSON.parse(items);
+                // console.log(itemObj);
+                var errorCheck = 0;
+                var orderDetailsItm = [];
+                for (item of itemObj) {
+                    var orderDetailsItmObj = {};
+                    if ((item.name == undefined) || (item.name == '') || (item.quantity == undefined) || (item.quantity == '') || (item.price == undefined) || (item.price == '')) {
+                        errorCheck++;
+                    } else {
+                        orderDetailsItmObj.item = item.name;
+                        orderDetailsItmObj.quantity = item.quantity;
+                        orderDetailsItmObj.itemPrice = item.price;
+                        orderDetailsItmObj.totalPrice = (Number(item.price) * Number(item.quantity));
+                        orderDetailsItm.push(orderDetailsItmObj);
+                    }
+                    // console.log(item.name);
+                    // console.log(item.quantity);
+                    // console.log(item.price);
+                }
+
+                if (errorCheck == 0) {
+
+                    vendorSchema.findOne({
+                        _id: vendorId,
+                        location: {
+                            $near: {
+                                $maxDistance: config.restaurantSearchDistance,
+                                $geometry: {
+                                    type: "Point",
+                                    coordinates: [long, latt]
+                                }
+                            }
+                        },
+                        isActive: true
+                    })
+                        .exec(async function (err, results) {
+                            if (err) {
+                                callBack({
+                                    success: false,
+                                    STATUSCODE: 500,
+                                    message: 'Internal DB error',
+                                    response_data: {}
+                                });
+                            } else {
+                                if (results != null) {
+                                    //console.log(data);
+
+
+                                    var ordersObj = {
+                                        vendorId: data.vendorId,
+                                        orderNo: generateOrder(),
+                                        orderTime: new Date(),
+                                        deliveryAddress: data.deliveryAddress,
+                                        deliveryCountry: data.deliveryCountry,
+                                        deliveryCityId: data.deliveryCityId,
+                                        customerId: data.customerId,
+                                        orderType: data.orderType,
+                                        orderStatus: 'NEW',
+                                        price: data.price,
+                                        discount: data.discount,
+                                        finalPrice: data.finalPrice,
+                                        specialInstruction: data.specialInstruction,
+                                        promocodeId: data.promocodeId
+                                    }
+
+                                    // console.log(ordersObj);
+
+
+
+                                    console.log(orderDetailsItm);
+
+                                    new orderSchema(ordersObj).save(async function (err, result) {
+                                        if (err) {
+                                            console.log(err);
+                                            callBack({
+                                                success: false,
+                                                STATUSCODE: 500,
+                                                message: 'Internal DB error',
+                                                response_data: {}
+                                            });
+                                        } else {
+                                            var orderId = result._id;
+                                            var orderDetailsArr = [];
+                                            var orderIdsArr = [];
+                                            var orderDetailsCount = orderDetailsItm.length;
+                                            var c = 0;
+                                            for (let orderdetails of orderDetailsItm) {
+                                                c++;
+                                                var orderEnter = orderdetails;
+                                                orderEnter.orderId = orderId;
+
+                                                // console.log(orderEnter);
+
+                                                orderDetailsArr.push(orderEnter);
+
+                                                new OrderDetailSchema(orderEnter).save(async function (err, result) {
+                                                    orderIdsArr.push(result._id);
+
+            
+
+                                                    orderSchema.update({_id: orderId}, {
+                                                        $set: {orderDetails: orderIdsArr}
+                                                    }, function (err, res) {
+                                                        if (err) {
+                                                            console.log(err);
+                                                        } else {
+                                                            console.log(res);
+                                                        }
+                                                    });
+                                                })
+                                            }
+                                            callBack({
+                                                success: true,
+                                                STATUSCODE: 200,
+                                                message: 'Order Updated Successfully.',
+                                                response_data: {}
+                                            });
+
+                                        }
+                                    });
+
+                                } else {
+                                    callBack({
+                                        success: false,
+                                        STATUSCODE: 500,
+                                        message: 'Something went wrong.',
+                                        response_data: {}
+                                    });
+                                }
+                            }
+
+                        });
+
+
+
+                } else {
+                    console.log('Invalid items object format');
+                    callBack({
+                        success: false,
+                        STATUSCODE: 500,
+                        message: 'Validation failed.',
+                        response_data: {}
+                    });
+                }
+
+            } else {
+                console.log('Invalid items object format');
+                callBack({
+                    success: false,
+                    STATUSCODE: 500,
+                    message: 'Validation failed.',
+                    response_data: {}
+                });
+            }
+            return;
 
 
         }
@@ -443,3 +621,17 @@ function onlyUnique(value, index, self) {
     return self.indexOf(value) === index;
 }
 
+function isJson(str) {
+    try {
+        JSON.parse(str);
+    } catch (e) {
+        return false;
+    }
+    return true;
+}
+
+function generateOrder() {
+
+    var orderNo = `EE${Math.floor((Math.random() * 100000))}`
+    return orderNo;
+}

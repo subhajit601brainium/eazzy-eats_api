@@ -47,7 +47,7 @@ module.exports = {
     },
 
     customerLogin: async (req, res, next) => {
-        const userTypeVal = ["customer", "deliveryboy", "vendorowner","admin"];
+        const userTypeVal = ["customer", "deliveryboy", "vendorowner","admin","vendoradmin"];
         const loginTypeVal = ["FACEBOOK", "GOOGLE", "EMAIL"];
         const rules = joi.object({
             user: joi.string().required().error(new Error('Email/phone is required')),
@@ -70,7 +70,7 @@ module.exports = {
     },
 
     forgotPasswordEmail: async (req, res, next) => {
-        const userTypeVal = ["customer", "deliveryboy", "vendorowner","admin"];
+        const userTypeVal = ["customer", "deliveryboy", "vendorowner","admin","vendoradmin"];
         const rules = joi.object({
             email: joi.string().required().email().error((err) => {
                 if (err[0].value === undefined || err[0].value === '' || err[0].value === null) {
@@ -127,7 +127,7 @@ module.exports = {
         }
     },
     resetPasswordAdmin: async (req, res, next) => {
-        const userTypeVal = ["admin"];
+        const userTypeVal = ["admin",,"vendoradmin"];
         const rules = joi.object({
             id: joi.string().required().error(new Error('Admin Id is required')),
             password: joi.string().required().error(new Error('Password is required')),
@@ -232,7 +232,7 @@ module.exports = {
         }
     },
     changePassword: async (req, res, next) => {
-        const userTypeVal = ["customer", "deliveryboy", "vendorowner","admin"];
+        const userTypeVal = ["customer", "deliveryboy", "vendorowner","admin","vendoradmin"];
         const rules = joi.object({
             customerId: joi.string().required().error(new Error('Customer id is required')),
             oldPassword: joi.string().required().error(new Error('Old password is required')),

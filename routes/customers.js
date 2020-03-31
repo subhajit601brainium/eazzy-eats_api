@@ -110,5 +110,12 @@ customerApi.post('/vendorDetails',jwtTokenValidator.validateToken,restaurantVali
     });
 })
 
+/** Order Submit */
+customerApi.post('/postOrder',jwtTokenValidator.validateToken,restaurantValidator.postOrderValidator, function(req, res) {
+    restaurantService.postOrder(req.body, function(result) {
+        res.status(200).send(result);
+    });
+})
+
 
 module.exports = customerApi;

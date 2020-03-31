@@ -63,7 +63,7 @@ module.exports = {
                     callBack(result);
                 }
             });
-        } else if(data.userType == 'vendorowner') {
+        } else if((data.userType == 'vendorowner') || (data.userType == 'vendoradmin')) {
             async.waterfall([
                 function(nextCb) {
                     registerModel.vendorownerLogin(data, function(result) {
@@ -516,6 +516,7 @@ module.exports = {
     }
     }, 
     forgotPasswordAdmin: (data, callBack) => {
+        if(data.userType == 'admin') {
             async.waterfall([
                 function(nextCb) {
                     registerModel.adminForgotPassword(data, function(result) {
@@ -534,9 +535,31 @@ module.exports = {
                     callBack(result);
                 }
             });
+        } else if(data.userType == 'vendoradmin') {
+            async.waterfall([
+                function(nextCb) {
+                    registerModel.vendoradminForgotPassword(data, function(result) {
+                        nextCb(null, result);
+                    });
+                }
+            ], function(err, result) {
+                if (err) {
+                    callBack({
+                        success: false,
+                        STATUSCODE: 403,
+                        message: 'Request Forbidden',
+                        response_data: {}
+                    })
+                } else {
+                    callBack(result);
+                }
+            });
+
+        }
         
     },
     resetPasswordAdmin: (data, callBack) => {
+        if(data.userType == 'admin') {
         async.waterfall([
             function(nextCb) {
                 registerModel.adminResetPassword(data, function(result) {
@@ -555,9 +578,30 @@ module.exports = {
                 callBack(result);
             }
         });
+    } else if(data.userType == 'vendoradmin') {
+        async.waterfall([
+            function(nextCb) {
+                registerModel.vendoradminResetPassword(data, function(result) {
+                    nextCb(null, result);
+                });
+            }
+        ], function(err, result) {
+            if (err) {
+                callBack({
+                    success: false,
+                    STATUSCODE: 403,
+                    message: 'Request Forbidden',
+                    response_data: {}
+                })
+            } else {
+                callBack(result);
+            }
+        });
+    }
     
     },
     changePasswordAdmin: (data, callBack) => {
+        if(data.userType == 'admin') {
         async.waterfall([
             function(nextCb) {
                 registerModel.adminChangePassword(data, function(result) {
@@ -576,6 +620,26 @@ module.exports = {
                 callBack(result);
             }
         });
+    } else if(data.userType == 'vendoradmin') {
+        async.waterfall([
+            function(nextCb) {
+                registerModel.vendoradminChangePassword(data, function(result) {
+                    nextCb(null, result);
+                });
+            }
+        ], function(err, result) {
+            if (err) {
+                callBack({
+                    success: false,
+                    STATUSCODE: 403,
+                    message: 'Request Forbidden',
+                    response_data: {}
+                })
+            } else {
+                callBack(result);
+            }
+        });
+    }
     
     },
 }

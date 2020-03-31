@@ -1166,12 +1166,14 @@ module.exports = {
     },
     //Vendor Owner
     vendorownerLogin: (data, callBack) => {
+
         if (data) {
             if (/^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/.test(data.user)) {
                 var loginCond = { email: data.user };
             } else {
                 var loginCond = { phone: data.user };
             }
+            
             vendorOwnerSchema.findOne(loginCond, function (err, result) {
                 if (err) {
                     callBack({
@@ -1739,6 +1741,186 @@ module.exports = {
                                             password: hash
                                         }
                                     }, function (err, res) {
+                                        if (err) {
+                                            callBack({
+                                                success: false,
+                                                STATUSCODE: 500,
+                                                message: 'Internal DB error',
+                                                response_data: {}
+                                            });
+                                        } else {
+                                            callBack({
+                                                success: true,
+                                                STATUSCODE: 200,
+                                                message: 'Password updated successfully',
+                                                response_data: {}
+                                            });
+                                        }
+                                    })
+                                }
+                            })
+                        } else {
+                            callBack({
+                                success: false,
+                                STATUSCODE: 422,
+                                message: 'Invalid old password',
+                                response_data: {}
+                            });
+                        }
+                    } else {
+                        callBack({
+                            success: false,
+                            STATUSCODE: 422,
+                            message: 'User not found',
+                            response_data: {}
+                        });
+                    }
+                }
+            });
+
+
+
+
+        }
+    },
+    //Vendor Admin
+    vendoradminForgotPassword: (data, callBack) => {
+        if (data) {
+            vendorOwnerSchema.findOne({ email: data.email}, function (err, customer) {
+                if (err) {
+                    callBack({
+                        success: false,
+                        STATUSCODE: 500,
+                        message: 'Internal DB error',
+                        response_data: {}
+                    });
+                } else {
+                    if (customer) {
+                        var passwordReset = {};
+                        passwordReset.password = generatePassword();
+                        passwordReset.firstName = customer.firstName;
+                        passwordReset.email = customer.email;
+                        passwordReset.adminLink = `${config.adminUrl}forgotpassword/${customer._id}`;
+
+                        try {
+                            mail('forgotPasswordAdminMail')(customer.email, passwordReset).send();
+                            callBack({
+                                success: true,
+                                STATUSCODE: 200,
+                                message: 'Please check your email to setup your password.',
+                                response_data: {}
+                            });
+                        } catch (Error) {
+                            console.log(Error);
+                            console.log('Something went wrong while sending email');
+                        }
+
+
+                    } else {
+                        callBack({
+                            success: false,
+                            STATUSCODE: 422,
+                            message: 'User not found',
+                            response_data: {}
+                        });
+                    }
+                }
+            })
+        }
+    },
+    vendoradminResetPassword: (data, callBack) => {
+        if (data) {
+            vendorOwnerSchema.findOne({ _id: data.id }, function (err, customer) {
+                if (err) {
+                    callBack({
+                        success: false,
+                        STATUSCODE: 500,
+                        message: 'Internal DB error',
+                        response_data: {}
+                    });
+                } else {
+                    if (customer) {
+                       // console.log(customer);
+                        console.log(data.password);
+                        bcrypt.hash(data.password, 8, function (err, hash) {
+                            if (err) {
+                                callBack({
+                                    success: false,
+                                    STATUSCODE: 500,
+                                    message: 'Something went wrong while setting the password',
+                                    response_data: {}
+                                });
+                            } else {
+                                console.log(hash);
+                                console.log(customer._id);
+                                customerSchema.update({ _id: customer._id }, {
+                                    $set: {
+                                        password: hash
+                                    }
+                                }, function (err, res) {
+                                    if (err) {
+                                        callBack({
+                                            success: false,
+                                            STATUSCODE: 500,
+                                            message: 'Internal DB error',
+                                            response_data: {}
+                                        });
+                                    } else {
+                                        console.log(res);
+                                        callBack({
+                                            success: true,
+                                            STATUSCODE: 200,
+                                            message: 'Password Changed successfully.',
+                                            response_data: {}
+                                        })
+                                    }
+                                })
+                            }
+                        })
+                    } else {
+                        callBack({
+                            success: false,
+                            STATUSCODE: 422,
+                            message: 'User not found',
+                            response_data: {}
+                        });
+                    }
+                }
+            })
+        }
+    },
+    vendoradminChangePassword: (data, callBack) => {
+        if (data) {
+            console.log(data);
+            vendorOwnerSchema.findOne({ _id: data.customerId }, function (err, result) {
+                if (err) {
+                    callBack({
+                        success: false,
+                        STATUSCODE: 500,
+                        message: 'Internal DB error',
+                        response_data: {}
+                    });
+                } else {
+                    if (result) {
+                        console.log(result);
+                        const comparePass = bcrypt.compareSync(data.oldPassword, result.password);
+                        if (comparePass) {
+
+                            bcrypt.hash(data.newPassword, 8, function (err, hash) {
+                                if (err) {
+                                    callBack({
+                                        success: false,
+                                        STATUSCODE: 500,
+                                        message: 'Something went wrong while setting the password',
+                                        response_data: {}
+                                    });
+                                } else {
+                                    vendorOwnerSchema.update({ _id: data.customerId }, {
+                                        $set: {
+                                            password: hash
+                                        }
+                                    }, function (err, res) {
+                                        console.log(res);
                                         if (err) {
                                             callBack({
                                                 success: false,
