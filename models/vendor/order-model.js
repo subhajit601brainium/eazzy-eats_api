@@ -2,13 +2,14 @@
 var config = require('../../config');
 var orderSchema = require('../../schema/Order');
 var OrderDetailSchema = require('../../schema/OrderDetail');
+var customerSchema = require('../../schema/Customer');
 
 module.exports = {
     //Order Status
     orderStatus: (data, callBack) => {
         if (data) {
             var respData = {};
-            respData.orderStatus = ['NEW','ACCEPTED', 'DELAYED', 'DELIVERED', 'COMPLETED'];
+            respData.orderStatus = ['NEW','ACCEPTED','READY', 'DELAYED', 'DELIVERED', 'COMPLETED'];
 
             callBack({
                 success: true,
@@ -34,7 +35,7 @@ module.exports = {
             .find(findCond)
             .sort({orderTime: 'desc'})
             .populate('orderDetails')
-            .then(function(res) {
+            .then(async function(res) {
                 
                 if(res.length > 0) {
                     
@@ -47,6 +48,12 @@ module.exports = {
                         orderObj.orderStatus = order.orderStatus;
                         orderObj.orderId = order._id;
                         orderObj.preparationTime = order.estimatedDeliveryTime;
+                        orderObj.delayedTime = order.delayedTime;
+
+                        //Get Customer Info
+                        var customerInfo = await customerSchema.findOne({_id: order.customerId});
+                        orderObj.countryCode = customerInfo.countryCode;
+                        orderObj.customerPhone = customerInfo.phone;
                         if(order.orderDetails.length > 0) {
                             for(let orderDetails of order.orderDetails) {
                                 var orderDetailsObj = {};
@@ -104,9 +111,10 @@ module.exports = {
             console.log(data);
             var respData = {};
             var newOrderResult = ['ACCEPTED','MODIFIED','CANCELLED'];
-            var acceptedOrderResult = ['DELAYED','DELIVERED','COMPLETED'];
-            var delayedOrderResult = ['DELIVERED','COMPLETED'];
-            var completedOrderResult = ['DELIVERED'];
+            var acceptedOrderResult = ['DELAYED','READY','DELIVERED','COMPLETED'];
+            var delayedOrderResult = ['READY','DELIVERED','COMPLETED'];
+            var readyOrderResult = ['DELIVERED','COMPLETED'];
+            var deliveredOrderResult = ['COMPLETED'];
 
             var vendorId = data.vendorId;
             var orderId = data.orderId;
@@ -139,7 +147,15 @@ module.exports = {
                         }
                     } else if(res.orderStatus == 'ACCEPTED') {
                         if(acceptedOrderResult.includes(orderChangeRes)) {
-                            updateStatus({ orderStatus: orderChangeRes,  }, { _id: orderId });
+
+                            if(orderChangeRes == 'DELAYED') {
+                                var delayedTime = data.delayedTimeMin;
+
+                                updateStatus({ orderStatus: orderChangeRes, delayedTime: delayedTime }, { _id: orderId });
+                            } else {
+                                updateStatus({ orderStatus: orderChangeRes }, { _id: orderId });
+                            }
+                           
 
                             callBack({
                                 success: true,
@@ -175,8 +191,8 @@ module.exports = {
                                 response_data: {}
                             }); 
                         }
-                    } else if(res.orderStatus == 'COMPLETED') {
-                        if(completedOrderResult.includes(orderChangeRes)) {
+                    } else if(res.orderStatus == 'READY') {
+                        if(readyOrderResult.includes(orderChangeRes)) {
                             updateStatus({ orderStatus: orderChangeRes,  }, { _id: orderId });
 
                             callBack({
@@ -190,7 +206,26 @@ module.exports = {
                             callBack({
                                 success: false,
                                 STATUSCODE: 422,
-                                message: 'Order result must be DELIVERED.',
+                                message: 'Order result must be DELIVERED or COMPLETED.',
+                                response_data: {}
+                            }); 
+                        }
+                    } else if(res.orderStatus == 'DELIVERED') {
+                        if(deliveredOrderResult.includes(orderChangeRes)) {
+                            updateStatus({ orderStatus: orderChangeRes,  }, { _id: orderId });
+
+                            callBack({
+                                success: true,
+                                STATUSCODE: 200,
+                                message: 'Order Status changes successfully.',
+                                response_data: {}
+                            }); 
+
+                        } else {
+                            callBack({
+                                success: false,
+                                STATUSCODE: 422,
+                                message: 'Order result must be COMPLETED.',
                                 response_data: {}
                             }); 
                         }

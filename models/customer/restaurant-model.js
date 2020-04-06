@@ -330,7 +330,9 @@ module.exports = {
     //Customer Post Order API
     postOrder: (data, callBack) => {
         if (data) {
-            // console.log(data);
+            console.log(data);
+
+            // return;
 
             var vendorId = data.vendorId;
             var items = data.items;
@@ -347,11 +349,15 @@ module.exports = {
                 // console.log(itemObj);
                 var errorCheck = 0;
                 var orderDetailsItm = [];
+                var itemsIdArr = [];
                 for (item of itemObj) {
                     var orderDetailsItmObj = {};
-                    if ((item.name == undefined) || (item.name == '') || (item.quantity == undefined) || (item.quantity == '') || (item.price == undefined) || (item.price == '')) {
+                    if ((item.name == undefined) || (item.name == '') || (item.quantity == undefined) || (item.quantity == '') || (item.price == undefined) || (item.price == '') || (item.itemId == undefined) || (item.itemId == '')) {
                         errorCheck++;
                     } else {
+                         //Items Check
+                         itemsIdArr.push(item.itemId);
+                       
                         orderDetailsItmObj.item = item.name;
                         orderDetailsItmObj.quantity = item.quantity;
                         orderDetailsItmObj.itemPrice = item.price;
@@ -389,12 +395,21 @@ module.exports = {
                             } else {
                                 if (results != null) {
                                     //console.log(data);
+                                    console.log(itemsIdArr);
+                                    var itemsCheck = await itemSchema.find({_id: { $in: itemsIdArr }})
+                                    var waitingTimeAll = 0;
 
-
+                                    if(itemsCheck.length > 0) {
+                                        for(let item of itemsCheck) {
+                                            waitingTimeAll += Number(item.waitingTime);
+                                        }
+                                    }
+                                    
                                     var ordersObj = {
                                         vendorId: data.vendorId,
                                         orderNo: generateOrder(),
                                         orderTime: new Date(),
+                                        estimatedDeliveryTime: waitingTimeAll,
                                         deliveryAddress: data.deliveryAddress,
                                         deliveryCountry: data.deliveryCountry,
                                         deliveryCityId: data.deliveryCityId,

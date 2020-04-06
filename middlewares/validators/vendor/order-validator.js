@@ -24,7 +24,8 @@ module.exports = {
             customerId: joi.string().required().error(new Error('customer Id is required')),
             vendorId: joi.string().required().error(new Error('vendor Id is required')),
             orderId: joi.string().required().error(new Error('Order Id is required')),
-            orderResult: joi.string().required().error(new Error('Please Select order Result'))
+            orderResult: joi.string().required().error(new Error('Please Select order Result')),
+            delayedTimeMin: joi.string().allow(''),
         });
 
         const value = await rules.validate(req.body);
@@ -35,7 +36,20 @@ module.exports = {
                 message: value.error.message
             })
         } else {
-            next();
+            if(req.body.orderResult == 'DELAYED') {
+                if((req.body.delayedTimeMin == '') || (req.body.delayedTimeMin == undefined)) {
+                    res.status(422).json({
+                        success: false,
+                        STATUSCODE: 422,
+                        message: 'Please send delayed time.'
+                    })
+                } else {
+                    next();
+                }
+            } else {
+                next();
+            }
+            
         }
     }
 }
