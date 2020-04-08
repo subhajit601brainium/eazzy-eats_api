@@ -9,11 +9,24 @@ var itemSchema = new mongoose.Schema({
     ingredients: { type: String, allow: '' },
     recipe: { type: String, allow: '' },
     price: { type: Number, required: true },
-    waitingTime: { type: String, allow: ''},
+    waitingTime: { type: Number, required: true },
     menuImage: { type: String, allow: ''},
     isActive: { type: Boolean, default: false },
 }, {
     timestamps: true
 });
+
+
+// Getter
+itemSchema.path('price').get(function(num) {
+   var originalNum =  num.toFixed(2);
+
+   return parseFloat(originalNum);
+  });
+  
+  // Setter
+  itemSchema.path('price').set(function(num) {
+    return num;
+  });
 
 module.exports = mongoose.model('Item', itemSchema);

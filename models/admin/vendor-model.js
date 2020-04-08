@@ -508,6 +508,8 @@ module.exports = {
                 }
 
                 if (menuImage != 'error') {
+
+                    var itemprice = parseInt(reqBody.price).toFixed(2);
                     var itemData = {
                         itemName: reqBody.itemName,
                         categoryId: reqBody.categoryId,
@@ -521,6 +523,8 @@ module.exports = {
                         menuImage: menuImage,
                         isActive: true,
                     };
+
+                    console.log(itemData);
 
                     new ItemSchema(itemData).save(async function (err, result) {
                         if (err) {

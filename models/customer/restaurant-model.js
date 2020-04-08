@@ -574,6 +574,7 @@ function restaurantCategoryItem(vendorId, categoryId) {
                             var itemsArr = [];
                             for (let itemsVal of results) {
                                 var itemsObj = {};
+                                itemsObj.itemId = itemsVal._id
                                 itemsObj.itemName = itemsVal.itemName
                                 itemsObj.type = itemsVal.type
                                 itemsObj.price = itemsVal.price
@@ -594,6 +595,7 @@ function restaurantCategoryItem(vendorId, categoryId) {
 
                                 if (itemsVal.categoryId.toString() == categoryId.toString()) {
                                     var itemsObj = {};
+                                    itemsObj.itemId = itemsVal._id
                                     itemsObj.categoryId = itemsVal.categoryId
                                     itemsObj.itemName = itemsVal.itemName
                                     itemsObj.type = itemsVal.type

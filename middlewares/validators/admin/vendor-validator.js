@@ -101,7 +101,7 @@ module.exports = {
             itemName: joi.string().required().error(new Error('Item name is required')),
             description: joi.string().allow('').optional(),
             type: joi.string().valid(...itemType).error(new Error('Item Type is required')),
-            waitingTime: joi.string().allow('').optional(),
+            waitingTime: joi.number().required().error(new Error('Waiting time is required')),
             menuImage: joi.string().allow('').optional(),
             price: joi.number().required().error(new Error('Price is required')),
             itemExtra: joi.string().allow('').optional()
