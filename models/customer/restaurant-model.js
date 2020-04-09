@@ -3,10 +3,12 @@ var vendorFavouriteSchema = require('../../schema/VendorFavourite');
 var categorySchema = require('../../schema/Category');
 var bannerSchema = require('../../schema/Banner');
 var itemSchema = require('../../schema/Item');
+var userDeviceLoginSchemaSchema = require('../../schema/UserDeviceLogin');
 
 var orderSchema = require('../../schema/Order');
 var OrderDetailSchema = require('../../schema/OrderDetail');
 var config = require('../../config');
+var PushLib = require('../../libraries/pushlib/send-push');
 
 module.exports = {
     //Customer Home/Dashboard API
@@ -355,9 +357,9 @@ module.exports = {
                     if ((item.name == undefined) || (item.name == '') || (item.quantity == undefined) || (item.quantity == '') || (item.price == undefined) || (item.price == '') || (item.itemId == undefined) || (item.itemId == '')) {
                         errorCheck++;
                     } else {
-                         //Items Check
-                         itemsIdArr.push(item.itemId);
-                       
+                        //Items Check
+                        itemsIdArr.push(item.itemId);
+
                         orderDetailsItmObj.item = item.name;
                         orderDetailsItmObj.quantity = item.quantity;
                         orderDetailsItmObj.itemPrice = item.price;
@@ -396,15 +398,21 @@ module.exports = {
                                 if (results != null) {
                                     //console.log(data);
                                     console.log(itemsIdArr);
-                                    var itemsCheck = await itemSchema.find({_id: { $in: itemsIdArr }})
+                                    var itemsCheck = await itemSchema.find({ _id: { $in: itemsIdArr } })
                                     var waitingTimeAll = 0;
 
-                                    if(itemsCheck.length > 0) {
-                                        for(let item of itemsCheck) {
+                                    if (itemsCheck.length > 0) {
+                                        for (let item of itemsCheck) {
                                             waitingTimeAll += Number(item.waitingTime);
                                         }
                                     }
-                                    
+                                    var orderVendorId = data.vendorId;
+
+                                    //SEND PUSH MESSAGE
+                                    var pushMessage = 'You have received a new order'
+                                    var receiverId = orderVendorId;
+                                    sendPush(receiverId, pushMessage)
+                                    return;
                                     var ordersObj = {
                                         vendorId: data.vendorId,
                                         orderNo: generateOrder(),
@@ -456,10 +464,10 @@ module.exports = {
                                                 new OrderDetailSchema(orderEnter).save(async function (err, result) {
                                                     orderIdsArr.push(result._id);
 
-            
 
-                                                    orderSchema.update({_id: orderId}, {
-                                                        $set: {orderDetails: orderIdsArr}
+
+                                                    orderSchema.update({ _id: orderId }, {
+                                                        $set: { orderDetails: orderIdsArr }
                                                     }, function (err, res) {
                                                         if (err) {
                                                             console.log(err);
@@ -469,6 +477,10 @@ module.exports = {
                                                     });
                                                 })
                                             }
+                                            //SEND PUSH MESSAGE
+                                            var pushMessage = ''
+                                            var receiverId = orderVendorId;
+                                            sendPush(receiverId, pushMessage)
                                             callBack({
                                                 success: true,
                                                 STATUSCODE: 200,
@@ -651,4 +663,80 @@ function generateOrder() {
 
     var orderNo = `EE${Math.floor((Math.random() * 100000))}`
     return orderNo;
+}
+
+function sendPush(receiverId, pushMessage) {
+    console.log(receiverId);
+
+    var pushMessage = pushMessage;
+    userDeviceLoginSchemaSchema
+        .find({ userId: receiverId, userType: 'VENDOR' })
+        .then(function (customers) {
+            // console.log(customers);
+            //   return;
+
+            if (customers.length > 0) {
+                for (let customer of customers) {
+
+                    var msgStr = "";
+                    // msgStr += "~push_notification_id~:~" + pushID + "~";
+                    var dataset = "{~message~:~" + pushMessage + "~" + msgStr + "}";
+
+                    var deviceToken = customer.deviceToken;
+
+                    if (customer.appType == 'ANDROID') {
+
+                        //ANDROID PUSH START
+                        var andPushData = {
+                            'badge': 0,
+                            'alert': pushMessage,
+                            'deviceToken': deviceToken,
+                            'pushMode': customer.pushMode,
+                            'dataset': dataset
+                        }
+
+                        PushLib.sendPushAndroid(andPushData)
+                            .then(async function (success) { //PUSH SUCCESS
+
+                                console.log('push_success', success);
+                            }).catch(async function (err) { //PUSH FAILED
+
+                                console.log('push_err', err);
+                            });
+                        //ANDROID PUSH END
+
+                    } else if (customer.appType == 'IOS') {
+
+                        //IOS PUSH START
+                        var iosPushData = {
+                            'badge': 0,
+                            'alert': pushMessage,
+                            'deviceToken': deviceToken,
+                            'pushMode': customer.pushMode,
+                            'pushTo': 'VENDOR',
+                            'dataset': {}
+                        }
+                        //SEND PUSH TO IOS [APN]
+
+                        PushLib.sendPushIOS(iosPushData)
+                            .then(async function (success) { //PUSH SUCCESS
+                                console.log('push_success', success);
+
+                            }).catch(async function (err) { //PUSH FAILED
+                                console.log('push_err', err);
+                            });
+                        //IOS PUSH END
+
+                    }
+
+
+
+
+                }
+            }
+
+
+
+        })
+
 }

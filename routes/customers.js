@@ -96,6 +96,21 @@ customerApi.post('/profileImageUpload',jwtTokenValidator.validateToken,customerV
     });
 })
 
+
+/** Change password */
+customerApi.post('/logout',jwtTokenValidator.validateToken, customerValidator.logout, function(req, res) {
+    registerService.logout(req.body, function(result) {
+        res.status(200).send(result);
+    });
+})
+
+/** Change password */
+customerApi.post('/devicePush',jwtTokenValidator.validateToken, customerValidator.devicePush, function(req, res) {
+    registerService.devicePush(req.body, function(result) {
+        res.status(200).send(result);
+    });
+})
+
 /** Home/Dashboard */
 customerApi.post('/dashboard',jwtTokenValidator.validateToken,restaurantValidator.customerHomeValidator, function(req, res) {
     restaurantService.customerHome(req, function(result) {

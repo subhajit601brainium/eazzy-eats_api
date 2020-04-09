@@ -455,6 +455,46 @@ module.exports = {
         });
     }
     },
+    logout: (data, callBack) => {
+        async.waterfall([
+            function(nextCb) {
+                registerModel.logout(data, function(result) {
+                    nextCb(null, result);
+                });
+            }
+        ], function(err, result) {
+            if (err) {
+                callBack({
+                    success: false,
+                    STATUSCODE: 403,
+                    message: 'Request Forbidden',
+                    response_data: {}
+                })
+            } else {
+                callBack(result);
+            }
+        });
+    },
+    devicePush: (data, callBack) => {
+        async.waterfall([
+            function(nextCb) {
+                registerModel.devicePush(data, function(result) {
+                    nextCb(null, result);
+                });
+            }
+        ], function(err, result) {
+            if (err) {
+                callBack({
+                    success: false,
+                    STATUSCODE: 403,
+                    message: 'Request Forbidden',
+                    response_data: {}
+                })
+            } else {
+                callBack(result);
+            }
+        });
+    },
     profileImageUpload: (data, callBack) => {
         if(data.body.userType == 'customer') {
         async.waterfall([
