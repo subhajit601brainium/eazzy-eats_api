@@ -8,7 +8,7 @@ const config = require('../config');
 exports.validateToken = async (req, res, next) => {
     //  console.log(req.originalUrl);
     //  return;
-     var whitelistUrl = ['/api/customer/dashboard','/api/customer/vendorDetails','/api/customer/postOrder']
+     var whitelistUrl = ['/api/customer/dashboard','/api/customer/vendorDetails','/api/customer/postOrder','/api/customer/orderList','/api/customer/orderDetails','/api/customer/search']
 
     if ((whitelistUrl.includes(req.originalUrl)) && (req.body.userType == 'GUEST')) {
         next();

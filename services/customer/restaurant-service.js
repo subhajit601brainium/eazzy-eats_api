@@ -61,5 +61,25 @@ module.exports = {
                 callBack(result);
             }
         });
-    }
+    },
+    customerSearch: (data, callBack) => {
+        async.waterfall([
+            function(nextCb) {
+                restaurantModel.customerSearch(data, function(result) {
+                    nextCb(null, result);
+                })
+            }
+        ], function(err, result) {
+            if (err) {
+                callBack({
+                    success: false,
+                    STATUSCODE: 403,
+                    message: 'Request Forbidden',
+                    response_data: {}
+                })
+            } else {
+                callBack(result);
+            }
+        });
+    },
 }

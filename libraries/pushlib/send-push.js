@@ -32,8 +32,6 @@ module.exports = {
             'deviceToken': receiveData.deviceToken,
             'dataset': receiveData.dataset,
         };
-        console.log(pushData);
-        return;
         return await andPush.sendPushDirect(pushData);
         
     }

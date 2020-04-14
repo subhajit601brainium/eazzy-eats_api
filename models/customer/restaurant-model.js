@@ -4,6 +4,7 @@ var categorySchema = require('../../schema/Category');
 var bannerSchema = require('../../schema/Banner');
 var itemSchema = require('../../schema/Item');
 var userDeviceLoginSchemaSchema = require('../../schema/UserDeviceLogin');
+var vendorOwnerSchema = require('../../schema/VendorOwner');
 
 var orderSchema = require('../../schema/Order');
 var OrderDetailSchema = require('../../schema/OrderDetail');
@@ -340,14 +341,34 @@ module.exports = {
             var items = data.items;
             var latt = data.latitude;
             var long = data.longitude;
+            var appType = data.appType;
 
             var checkJson = false
 
-            var checkJson = isJson(items);
+            if(appType == 'ANDROID') {
+                var checkJson = isJson(items);
+            } else {
+                checkJson = true;
+            }
+           
+
+            console.log(checkJson);
+            console.log(appType);
+            console.log(items);
+
+            var checkJson = true;
 
             if (checkJson == true) {
 
+              //  var itemObj = JSON.parse(items);
+
+              if(appType == 'ANDROID') {
                 var itemObj = JSON.parse(items);
+            } else {
+                var itemObj = items;
+            }
+
+              
                 // console.log(itemObj);
                 var errorCheck = 0;
                 var orderDetailsItm = [];
@@ -408,19 +429,22 @@ module.exports = {
                                     }
                                     var orderVendorId = data.vendorId;
 
-                                    //SEND PUSH MESSAGE
-                                    var pushMessage = 'You have received a new order'
-                                    var receiverId = orderVendorId;
-                                    sendPush(receiverId, pushMessage)
-                                    return;
                                     var ordersObj = {
                                         vendorId: data.vendorId,
                                         orderNo: generateOrder(),
                                         orderTime: new Date(),
                                         estimatedDeliveryTime: waitingTimeAll,
-                                        deliveryAddress: data.deliveryAddress,
-                                        deliveryCountry: data.deliveryCountry,
-                                        deliveryCityId: data.deliveryCityId,
+
+                                        deliveryPincode: data.deliveryPincode,
+                                        deliveryHouseNo: data.deliveryHouseNo,
+                                        deliveryRoad: data.deliveryRoad,
+                                        deliveryCountryCode: data.deliveryCountryCode,
+                                        deliveryPhone: data.deliveryPhone,
+                                        deliveryState: data.deliveryState,
+                                        deliveryCity: data.deliveryCity,
+                                        deliveryLandmark: data.deliveryLandmark,
+                                        deliveryName: data.deliveryName,
+
                                         customerId: data.customerId,
                                         orderType: data.orderType,
                                         orderStatus: 'NEW',
@@ -478,9 +502,9 @@ module.exports = {
                                                 })
                                             }
                                             //SEND PUSH MESSAGE
-                                            var pushMessage = ''
+                                            var pushMessage = 'You have received a new order'
                                             var receiverId = orderVendorId;
-                                            sendPush(receiverId, pushMessage)
+                                            sendPush(receiverId, pushMessage);
                                             callBack({
                                                 success: true,
                                                 STATUSCODE: 200,
@@ -527,6 +551,164 @@ module.exports = {
             return;
 
 
+        }
+    },
+    //Customer Search API
+    customerSearch: (data, callBack) => {
+        if (data) {
+            var latt = data.body.latitude;
+            var long = data.body.longitude;
+            var userType = data.body.userType;
+            var searchVal = data.body.search;
+            var responseDt = [];
+            var response_data = {};
+
+            // console.log(data.body);
+            console.log(searchVal);
+
+            //SEARCH ALL RESTAURANT
+            vendorSchema.find({
+                "restaurantName": { $regex: '.*' + searchVal + '.*' },
+                // location: {
+                //     $near: {
+                //         $maxDistance: config.restaurantSearchDistance,
+                //         $geometry: {
+                //             type: "Point",
+                //             coordinates: [long, latt]
+                //         }
+                //     }
+                // },
+                isActive: true
+            })
+                .exec(async function (err, vendorresults) {
+                    if (err) {
+                        callBack({
+                            success: false,
+                            STATUSCODE: 500,
+                            message: 'Internal DB error',
+                            response_data: {}
+                        });
+                    } else {
+                        var vendorIdres = [];
+
+                        if (vendorresults.length > 0) {
+                            for (let vendorRes of vendorresults) {
+                                vendorIdres.push(vendorRes._id);
+                            }
+                        }
+
+                        //SEARCH ALL ITEM
+                        itemSchema.find({
+                            "itemName": { $regex: '.*' + searchVal + '.*' }
+                        })
+                            .then(function (itemresponse) {
+                                if (itemresponse.length > 0) {
+                                    for (let itemRes of itemresponse) {
+                                        vendorIdres.push(itemRes.vendorId);
+                                    }
+                                }
+                                console.log(vendorIdres);
+                                vendorSchema.find({
+                                    _id: { $in: vendorIdres },
+                                    // location: {
+                                    //     $near: {
+                                    //         $maxDistance: config.restaurantSearchDistance,
+                                    //         $geometry: {
+                                    //             type: "Point",
+                                    //             coordinates: [long, latt]
+                                    //         }
+                                    //     }
+                                    // },
+                                    isActive: true
+                                })
+                                    .then(async function (results) {
+                                        console.log(results);
+                                        // return;
+                                        if (results.length > 0) {
+                                            var vendorIds = [];
+                                            for (let restaurant of results) {
+                                                var responseObj = {};
+                                                responseObj = {
+                                                    id: restaurant._id,
+                                                    name: restaurant.restaurantName,
+                                                    description: restaurant.description,
+                                                    logo: `${config.serverhost}:${config.port}/img/vendor/${restaurant.logo}`,
+                                                    rating: restaurant.rating
+                                                };
+                                                // console.log(restaurant.location.coordinates);
+
+                                                //Calculate Distance
+                                                var sourceLat = restaurant.location.coordinates[1];
+                                                var sourceLong = restaurant.location.coordinates[0];
+
+                                                var destLat = latt;
+                                                var destLong = long;
+                                                responseObj.distance = await getDistanceinMtr(sourceLat, sourceLong, destLat, destLong);
+                                                // console.log(responseObj);
+
+                                                //Get Favorites (Only for Genuine Customers, No Guest)
+                                                if (userType == 'GUEST') {
+                                                    responseObj.favorite = 0;
+                                                } else {
+                                                    var customerId = data.body.customerId;
+                                                    var vendorId = restaurant._id;
+                                                    responseObj.favorite = await vendorFavouriteSchema.countDocuments({ vendorId: vendorId, customerId: customerId });
+                                                }
+                                                responseDt.push(responseObj);
+                                                vendorIds.push(restaurant._id);
+                                            }
+
+                                            //Restaurant
+                                            response_data.vendor = responseDt;
+                                            // //Category Data
+                                            // response_data.category_data = await categorySchema.find({}, { "categoryName": 1, "image": 1 })
+                                            // response_data.category_imageUrl = `${config.serverhost}:${config.port}/img/category/`;
+
+                                            // //Banner Data
+                                            // // console.log(vendorIds);
+                                            // response_data.banner_data = await bannerSchema.find({
+                                            //     vendorId: { $in: vendorIds }
+                                            // }, { "bannerType": 1, "image": 1 })
+                                            // response_data.banner_imageUrl = `${config.serverhost}:${config.port}/img/vendor/`;
+
+                                            callBack({
+                                                success: true,
+                                                STATUSCODE: 200,
+                                                message: `${results.length} restaurants found.`,
+                                                response_data: response_data
+                                            })
+
+                                        } else {
+                                            callBack({
+                                                success: true,
+                                                STATUSCODE: 200,
+                                                message: 'No nearby restaurants found.',
+                                                response_data: response_data
+                                            })
+                                        }
+                                    })
+                                    .catch(function (error) {
+                                        console.log(error);
+                                        callBack({
+                                            success: false,
+                                            STATUSCODE: 500,
+                                            message: 'Something went wrong.',
+                                            response_data: {}
+                                        })
+                                    })
+
+                            })
+                            .catch(function (error) {
+                                console.log(error);
+                                callBack({
+                                    success: false,
+                                    STATUSCODE: 500,
+                                    message: 'Something went wrong.',
+                                    response_data: {}
+                                })
+                            });
+                    }
+                });
         }
     }
 }
@@ -666,77 +848,90 @@ function generateOrder() {
 }
 
 function sendPush(receiverId, pushMessage) {
-    console.log(receiverId);
+   // console.log(receiverId);
+   var pushMessage = pushMessage;
+    vendorOwnerSchema
+        .find({ vendorId: receiverId })
+        .then(function (allowners) {
+            vendorOwnerId = [];
+            if (allowners.length > 0) {
+                for (let owner of allowners) {
+                    vendorOwnerId.push(owner._id);
+                }
+            }
 
-    var pushMessage = pushMessage;
-    userDeviceLoginSchemaSchema
-        .find({ userId: receiverId, userType: 'VENDOR' })
-        .then(function (customers) {
-            // console.log(customers);
-            //   return;
+            //console.log(vendorOwnerId);
+            userDeviceLoginSchemaSchema
+                .find({  userId: { $in: vendorOwnerId }, userType: 'VENDOR' })
+                .then(function (customers) {
+                    // console.log(customers);
+                    //   return;
 
-            if (customers.length > 0) {
-                for (let customer of customers) {
+                    if (customers.length > 0) {
+                        for (let customer of customers) {
+                            if(customer.deviceToken != '') {
 
-                    var msgStr = "";
-                    // msgStr += "~push_notification_id~:~" + pushID + "~";
-                    var dataset = "{~message~:~" + pushMessage + "~" + msgStr + "}";
+                                var msgStr = "";
+                                // msgStr += "~push_notification_id~:~" + pushID + "~";
+                                var dataset = "{~message~:~" + pushMessage + "~" + msgStr + "}";
+    
+                                var deviceToken = customer.deviceToken;
+    
+                                if (customer.appType == 'ANDROID') {
+    
+                                    //ANDROID PUSH START
+                                    var andPushData = {
+                                        'badge': 0,
+                                        'alert': pushMessage,
+                                        'deviceToken': deviceToken,
+                                        'pushMode': customer.pushMode,
+                                        'dataset': dataset
+                                    }
+                                    PushLib.sendPushAndroid(andPushData)
+                                        .then(async function (success) { //PUSH SUCCESS
+    
+                                            console.log('push_success', success);
+                                        }).catch(async function (err) { //PUSH FAILED
+    
+                                            console.log('push_err', err);
+                                        });
+                                    //ANDROID PUSH END
+    
+                                } else if (customer.appType == 'IOS') {
+    
+                                    //IOS PUSH START
+                                    var iosPushData = {
+                                        'badge': 0,
+                                        'alert': pushMessage,
+                                        'deviceToken': deviceToken,
+                                        'pushMode': customer.pushMode,
+                                        'pushTo': 'VENDOR',
+                                        'dataset': {}
+                                    }
+                                    //SEND PUSH TO IOS [APN]
+    
+                                    // PushLib.sendPushIOS(iosPushData)
+                                    //     .then(async function (success) { //PUSH SUCCESS
+                                    //         console.log('push_success', success);
+    
+                                    //     }).catch(async function (err) { //PUSH FAILED
+                                    //         console.log('push_err', err);
+                                    //     });
+                                    //IOS PUSH END
+    
+                                }
 
-                    var deviceToken = customer.deviceToken;
-
-                    if (customer.appType == 'ANDROID') {
-
-                        //ANDROID PUSH START
-                        var andPushData = {
-                            'badge': 0,
-                            'alert': pushMessage,
-                            'deviceToken': deviceToken,
-                            'pushMode': customer.pushMode,
-                            'dataset': dataset
+                            }
                         }
-
-                        PushLib.sendPushAndroid(andPushData)
-                            .then(async function (success) { //PUSH SUCCESS
-
-                                console.log('push_success', success);
-                            }).catch(async function (err) { //PUSH FAILED
-
-                                console.log('push_err', err);
-                            });
-                        //ANDROID PUSH END
-
-                    } else if (customer.appType == 'IOS') {
-
-                        //IOS PUSH START
-                        var iosPushData = {
-                            'badge': 0,
-                            'alert': pushMessage,
-                            'deviceToken': deviceToken,
-                            'pushMode': customer.pushMode,
-                            'pushTo': 'VENDOR',
-                            'dataset': {}
-                        }
-                        //SEND PUSH TO IOS [APN]
-
-                        PushLib.sendPushIOS(iosPushData)
-                            .then(async function (success) { //PUSH SUCCESS
-                                console.log('push_success', success);
-
-                            }).catch(async function (err) { //PUSH FAILED
-                                console.log('push_err', err);
-                            });
-                        //IOS PUSH END
-
                     }
 
 
 
-
-                }
-            }
-
+                })
 
 
         })
+
+
 
 }

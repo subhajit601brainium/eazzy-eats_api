@@ -350,13 +350,13 @@ function sendPush(receiverId, pushMessage) {
                         }
                         //SEND PUSH TO IOS [APN]
 
-                        PushLib.sendPushIOS(iosPushData)
-                            .then(async function (success) { //PUSH SUCCESS
-                                console.log('push_success', success);
+                        // PushLib.sendPushIOS(iosPushData)
+                        //     .then(async function (success) { //PUSH SUCCESS
+                        //         console.log('push_success', success);
 
-                            }).catch(async function (err) { //PUSH FAILED
-                                console.log('push_err', err);
-                            });
+                        //     }).catch(async function (err) { //PUSH FAILED
+                        //         console.log('push_err', err);
+                        //     });
                         //IOS PUSH END
                     }
                 }

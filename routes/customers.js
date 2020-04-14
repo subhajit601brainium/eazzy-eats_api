@@ -3,6 +3,7 @@ var express = require('express');
 const config = require('../config');
 const registerService = require('../services/customer/register-service');
 const restaurantService = require('../services/customer/restaurant-service');
+const orderService = require('../services/customer/order-service');
 const customerValidator = require('../middlewares/validators/customer/customer-validator');
 const restaurantValidator = require('../middlewares/validators/customer/restaurant-validator');
 
@@ -132,5 +133,25 @@ customerApi.post('/postOrder',jwtTokenValidator.validateToken,restaurantValidato
     });
 })
 
+/** Search */
+customerApi.post('/search',jwtTokenValidator.validateToken,restaurantValidator.customerSearchValidator, function(req, res) {
+    restaurantService.customerSearch(req, function(result) {
+        res.status(200).send(result);
+    });
+})
+
+/** Order List */
+customerApi.post('/orderList',jwtTokenValidator.validateToken,restaurantValidator.customerOrderListValidator, function(req, res) {
+    orderService.orderList(req, function(result) {
+        res.status(200).send(result);
+    });
+})
+
+/** Order Details */
+customerApi.post('/orderDetails',jwtTokenValidator.validateToken,restaurantValidator.customerOrderDetailsValidator, function(req, res) {
+    orderService.orderDetails(req, function(result) {
+        res.status(200).send(result);
+    });
+})
 
 module.exports = customerApi;

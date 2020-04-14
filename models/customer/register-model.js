@@ -4,6 +4,7 @@ var customerSchema = require('../../schema/Customer');
 var deliveryBoySchema = require('../../schema/DeliveryBoy');
 var vendorOwnerSchema = require('../../schema/VendorOwner');
 var userDeviceLoginSchema = require('../../schema/UserDeviceLogin');
+var vendorSchema = require('../../schema/Vendor');
 const config = require('../../config');
 const mail = require('../../modules/sendEmail');
 var bcrypt = require('bcryptjs');
@@ -289,6 +290,9 @@ module.exports = {
                     if (result) {
                         if (data.userType == 'admin') {
                             var userType = 'ADMIN'
+                            data.appType = 'BROWSER';
+                            data.pushMode = 'P';
+                            data.deviceToken = '';
                         } else {
                             var userType = 'CUSTOMER'
                         }
@@ -788,8 +792,8 @@ module.exports = {
                     console.log(err);
                 }
                 // deleted at most one tank document
-              });
-              callBack({
+            });
+            callBack({
                 success: true,
                 STATUSCODE: 200,
                 message: 'User logged out Successfully',
@@ -801,7 +805,7 @@ module.exports = {
         if (data) {
             console.log(data);
             var loginId = data.loginId;
-            
+
             //ADD DATA IN USER LOGIN DEVICE TABLE
             var userDeviceData = {
                 appType: data.appType,
@@ -809,11 +813,11 @@ module.exports = {
                 deviceToken: data.deviceToken
             }
 
-            userDeviceLoginSchema.updateOne({_id: loginId}, {
+            userDeviceLoginSchema.updateOne({ _id: loginId }, {
                 $set: userDeviceData
             }, function (err, res) {
                 if (err) {
-                   console.log(err)
+                    console.log(err)
                 }
                 callBack({
                     success: true,
@@ -1278,10 +1282,19 @@ module.exports = {
                     });
                 } else {
                     if (result) {
+                        if (data.userType == 'vendoradmin') {
+                            data.appType = 'BROWSER';
+                            data.pushMode = 'P';
+                            data.deviceToken = '';
+                            var userType = 'VENDOR ADMIN';
+
+                        } else {
+                            var userType = 'VENDOR';
+                        }
                         //ADD DATA IN USER LOGIN DEVICE TABLE
                         var userDeviceData = {
                             userId: result._id,
-                            userType: 'VENDOR',
+                            userType: userType,
                             appType: data.appType,
                             pushMode: data.pushMode,
                             deviceToken: data.deviceToken
@@ -1300,6 +1313,10 @@ module.exports = {
                                 const comparePass = bcrypt.compareSync(data.password, result.password);
                                 if (comparePass) {
                                     const authToken = generateToken(result);
+
+                                    //Vendor Info
+                                    var vendorInfo = await vendorSchema.findOne({ _id: result.vendorId });
+
                                     let response = {
                                         userDetails: {
                                             firstName: result.firstName,
@@ -1315,7 +1332,8 @@ module.exports = {
                                             userType: data.userType,
                                             loginType: data.loginType
                                         },
-                                        authToken: authToken
+                                        authToken: authToken,
+                                        restaurantName: vendorInfo.restaurantName
                                     }
 
                                     callBack({
