@@ -4,6 +4,7 @@ var categorySchema = require('../../schema/Category');
 var bannerSchema = require('../../schema/Banner');
 var itemSchema = require('../../schema/Item');
 var userDeviceLoginSchemaSchema = require('../../schema/UserDeviceLogin');
+var promoCodeSchema = require('../../schema/PromoCode');
 
 var orderSchema = require('../../schema/Order');
 var OrderDetailSchema = require('../../schema/OrderDetail');
@@ -114,5 +115,40 @@ module.exports = {
                     })
                 });
         }
-    }
+    },
+
+     //Customer Offer List API
+     promoCodeList: (data, callBack) => {
+        if (data) {
+            // var promoData = {
+            //     fromDate: new Date(),
+            //     toDate: new Date(),
+            //     promoType: 'PERCENTAGE',
+            //     promoPrice: 40,
+            //     promoConditions: 'Get 40 % off above Rs 499 for all dishes',
+            //     promoCode: 'FMAPP 40'
+            // }
+            // new promoCodeSchema(promoData).save(async function (err, result) {
+            //     console.log(err);
+            // });
+            promoCodeSchema.find({$and:[{fromDate:{$lte:new Date()}},{toDate:{$gte:new Date()}}]})
+                .then((allcodes) => {
+                    callBack({
+                        success: true,
+                        STATUSCODE: 200,
+                        message: 'All Promo Code',
+                        response_data: { code: allcodes }
+                    });
+                })
+                .catch((error) => {
+                    console.log(error);
+                    callBack({
+                        success: false,
+                        STATUSCODE: 500,
+                        message: 'Internal DB error',
+                        response_data: {}
+                    });
+                });
+        }
+    },
 }

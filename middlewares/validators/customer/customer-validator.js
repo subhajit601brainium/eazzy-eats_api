@@ -127,6 +127,25 @@ module.exports = {
             next();
         }
     },
+    
+    forgotEmail: async (req, res, next) => {
+        const userTypeVal = ["customer", "deliveryboy", "vendorowner"];
+        const rules = joi.object({
+            phone: joi.string().required().error(new Error('Please send phone')),
+            userType: joi.string().required().valid(...userTypeVal).error(new Error('Please send userType'))
+        });
+
+        const value = await rules.validate(req.body);
+        if (value.error) {
+            res.status(422).json({
+                success: false,
+                STATUSCODE: 422,
+                message: value.error.message
+            })
+        } else {
+            next();
+        }
+    },
 
     resetPassword: async (req, res, next) => {
         const userTypeVal = ["customer", "deliveryboy", "vendorowner", "admin"];

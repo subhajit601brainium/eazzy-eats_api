@@ -86,6 +86,30 @@ module.exports = {
        
     },
 
+    forgotEmail: (data, callBack) => {
+       
+
+            async.waterfall([
+                function(nextCb) {
+                    registerModel.forgotEmail(data, function(result) {
+                        nextCb(null, result);
+                    });
+                }
+            ], function(err, result) {
+                if (err) {
+                    callBack({
+                        success: false,
+                        STATUSCODE: 403,
+                        message: 'Request Forbidden',
+                        response_data: {}
+                    })
+                } else {
+                    callBack(result);
+                }
+            });
+        
+        
+    },
     forgotPassword: (data, callBack) => {
         if(data.userType == 'customer') {
 

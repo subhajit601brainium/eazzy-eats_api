@@ -3,8 +3,7 @@ var bcrypt = require('bcryptjs');
 
 var vendorOwnerSchema = new mongoose.Schema({
     vendorId: { type: mongoose.Schema.Types.ObjectId, required: true },
-    firstName: { type: String, required: true },
-    lastName: { type: String, required: true },
+    fullName: { type: String, default: '' },
     email: { type: String, unique: true},
     phone: { type: Number, unique: true},
     countryCode: { type: String, default: '' },

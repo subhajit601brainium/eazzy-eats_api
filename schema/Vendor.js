@@ -6,11 +6,13 @@ var vendorSchema = new mongoose.Schema({
     managerName: { type: String, required: true },
     restaurantType: { type: String, enum: ['VEG', 'NON VEG', 'BOTH'] },
     contactEmail: { type: String, email: true, unique: true },
+    countryCode: { type: String, required: true },
     contactPhone: { type: Number, unique: true },
     logo: { type: String, required: true },
     banner: { type: String, required: true },
     rating: { type: Number, default: 0 },
     licenceImage: { type: String, default: ''},
+    address: { type: String, default: ''},
     location: {
         type: {
             type: String,

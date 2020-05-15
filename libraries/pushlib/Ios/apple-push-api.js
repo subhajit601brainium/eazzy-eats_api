@@ -36,7 +36,7 @@ module.exports = {
 
         console.log('note',note);
         apnProvider.send(note, pushData.deviceToken).then((result) => {
-            //console.log(result);
+            console.log('IOS_RESULT',result);
             if(result.sent.length > 0) {
                 return resolve (true);
             } else if(result.failed.length > 0) {

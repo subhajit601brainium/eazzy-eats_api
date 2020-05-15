@@ -2,7 +2,9 @@
 var config = require('../../config');
 var orderSchema = require('../../schema/Order');
 var OrderDetailSchema = require('../../schema/OrderDetail');
+var userDeviceLoginSchemaSchema = require('../../schema/UserDeviceLogin');
 var customerSchema = require('../../schema/Customer');
+var vendorSchema = require('../../schema/Vendor');
 var PushLib = require('../../libraries/pushlib/send-push');
 
 module.exports = {
@@ -74,7 +76,7 @@ module.exports = {
                         // respData.push({'ordersArr':ordersArr});
                         respData.ordersArr = ordersArr;
 
-                        console.log(respData);
+                        // console.log(respData);
                         callBack({
                             success: true,
                             STATUSCODE: 200,
@@ -109,11 +111,11 @@ module.exports = {
     //Order Confirm
     orderConfirm: (data, callBack) => {
         if (data) {
-            console.log(data);
+            // console.log(data);
             var respData = {};
             var newOrderResult = ['ACCEPTED', 'MODIFIED', 'CANCELLED'];
             var acceptedOrderResult = ['DELAYED', 'READY', 'DELIVERED', 'COMPLETED'];
-            var delayedOrderResult = ['READY', 'DELIVERED', 'COMPLETED'];
+            var delayedOrderResult = ['READY', 'DELAYED', 'DELIVERED', 'COMPLETED'];
             var readyOrderResult = ['DELIVERED', 'COMPLETED'];
             var deliveredOrderResult = ['COMPLETED'];
 
@@ -124,7 +126,8 @@ module.exports = {
 
             orderSchema
                 .findOne({ vendorId: vendorId, _id: orderId })
-                .then(function (res) {
+                .then(async function (res) {
+                    // console.log('res',res);
                     if (res != null) {
 
                         if (res.orderStatus == 'NEW') {
@@ -135,7 +138,13 @@ module.exports = {
                                     //SEND PUSH MESSAGE
                                     var pushMessage = 'Your order has been accepted'
                                     var receiverId = res.customerId;
-                                    sendPush(receiverId, pushMessage)
+                                    var orderNo = res.orderNo;
+                                    var orderStatus = orderChangeRes;
+
+                                    //Fetch Vendor name
+                                    var vendorInfo = await vendorSchema.findOne({ _id: vendorId });
+                                    var vendorName = vendorInfo.restaurantName;
+                                    sendPush(receiverId, pushMessage, orderNo, orderStatus, vendorName);
                                 }
                                 callBack({
                                     success: true,
@@ -160,8 +169,15 @@ module.exports = {
 
                                     //SEND PUSH MESSAGE
                                     var pushMessage = `Your order has been delayed by ${delayedTime}`
+
                                     var receiverId = res.customerId;
-                                    sendPush(receiverId, pushMessage)
+                                    var orderNo = res.orderNo;
+                                    var orderStatus = orderChangeRes;
+
+                                    //Fetch Vendor name
+                                    var vendorInfo = await vendorSchema.findOne({ _id: vendorId });
+                                    var vendorName = vendorInfo.restaurantName;
+                                    sendPush(receiverId, pushMessage, orderNo, orderStatus, vendorName);
 
                                     updateStatus({ orderStatus: orderChangeRes, delayedTime: delayedTime }, { _id: orderId });
                                 } else {
@@ -170,7 +186,13 @@ module.exports = {
                                         //SEND PUSH MESSAGE
                                         var pushMessage = `Your order has been ready to deliver`
                                         var receiverId = res.customerId;
-                                        sendPush(receiverId, pushMessage)
+                                        var orderNo = res.orderNo;
+                                        var orderStatus = orderChangeRes;
+
+                                        //Fetch Vendor name
+                                        var vendorInfo = await vendorSchema.findOne({ _id: vendorId });
+                                        var vendorName = vendorInfo.restaurantName;
+                                        sendPush(receiverId, pushMessage, orderNo, orderStatus, vendorName);
 
                                     }
                                     updateStatus({ orderStatus: orderChangeRes }, { _id: orderId });
@@ -194,15 +216,40 @@ module.exports = {
                             }
                         } else if (res.orderStatus == 'DELAYED') {
                             if (delayedOrderResult.includes(orderChangeRes)) {
-                                if (orderChangeRes == 'READY') {
+                                if (orderChangeRes == 'DELAYED') {
+                                    var delayedTime = data.delayedTimeMin;
+
+                                    //SEND PUSH MESSAGE
+                                    var pushMessage = `Your order has been delayed by ${delayedTime}`
+                                    var receiverId = res.customerId;
+                                    var orderNo = res.orderNo;
+                                    var orderStatus = orderChangeRes;
+
+                                    //Fetch Vendor name
+                                    var vendorInfo = await vendorSchema.findOne({ _id: vendorId });
+                                    var vendorName = vendorInfo.restaurantName;
+                                    sendPush(receiverId, pushMessage, orderNo, orderStatus, vendorName);
+
+                                    updateStatus({ orderStatus: orderChangeRes, delayedTime: delayedTime }, { _id: orderId });
+                                } else if (orderChangeRes == 'READY') {
 
                                     //SEND PUSH MESSAGE
                                     var pushMessage = `Your order has been ready to deliver`
                                     var receiverId = res.customerId;
-                                    sendPush(receiverId, pushMessage)
+                                    var orderNo = res.orderNo;
+                                    var orderStatus = orderChangeRes;
 
+                                    //Fetch Vendor name
+                                    var vendorInfo = await vendorSchema.findOne({ _id: vendorId });
+                                    var vendorName = vendorInfo.restaurantName;
+                                    sendPush(receiverId, pushMessage, orderNo, orderStatus, vendorName);
+
+                                    updateStatus({ orderStatus: orderChangeRes, }, { _id: orderId });
+
+                                } else {
+                                    updateStatus({ orderStatus: orderChangeRes, }, { _id: orderId });
                                 }
-                                updateStatus({ orderStatus: orderChangeRes, }, { _id: orderId });
+
 
                                 callBack({
                                     success: true,
@@ -281,7 +328,87 @@ module.exports = {
                 });
 
         }
-    }
+    },
+    dashboard: (data, callBack) => {
+        if (data) {
+            var respData = {};
+
+            var vendorId = data.body.vendorId;
+
+
+
+            orderSchema
+                .find({ vendorId: vendorId })
+                .sort({ orderTime: 'desc' })
+                .then(async function (orders) {
+                    var preparedOrder = [];
+                    var preparedOrderCnt = 0;
+                    var deliveredOrder = [];
+                    var deliveredOrderCnt = 0;
+                    var delayedOrder = [];
+                    var delayedOrderCnt = 0;
+                    var newOrder = [];
+                    var newOrderCnt = 0;
+                    var preOrder = [];
+                    var preOrderCnt = 0;
+                    var readyOrder = [];
+                    var readyOrderCnt = 0;
+
+                    console.log(orders);
+                    if (orders.length > 0) {
+
+                        for (let order of orders) {
+                            if (order.orderStatus == 'DELIVERED') {
+                                deliveredOrder.push(order);
+                                deliveredOrderCnt = deliveredOrder.length;
+                            } else if (order.orderStatus == 'NEW') {
+                                newOrder.push(order);
+                                newOrderCnt = newOrder.length;
+                            } else if (order.orderStatus == 'DELAYED') {
+                                delayedOrder.push(order);
+                                delayedOrderCnt = delayedOrder.length;
+                            } else if (order.orderStatus == 'READY') {
+                                readyOrder.push(order);
+                                readyOrderCnt = readyOrder.length;
+                            } else if (order.orderStatus == 'COMPLETED') {
+                                preparedOrder.push(order);
+                                preparedOrderCnt = preparedOrder.length;
+                            } else if (order.orderStatus == 'PRE') {
+                                preOrder.push(order);
+                                preOrderCnt = preOrder.length;
+                            }
+                        }
+
+                    }
+                    // console.log(respData);
+                    callBack({
+                        success: true,
+                        STATUSCODE: 200,
+                        message: 'Dashboard data.',
+                        response_data: {
+                            'prepared': preparedOrderCnt,
+                            'delivered': deliveredOrderCnt,
+                            'delay': delayedOrderCnt,
+                            'new': newOrderCnt,
+                            'pre': preOrderCnt,
+                            'ready': readyOrderCnt
+                        }
+                    });
+                })
+                .catch(function (err) {
+                    console.log(err);
+
+                    callBack({
+                        success: false,
+                        STATUSCODE: 500,
+                        message: 'Something went wrong.',
+                        response_data: {}
+                    });
+
+                });
+
+        }
+    },
 }
 
 function updateStatus(update, cond) {
@@ -299,22 +426,25 @@ function updateStatus(update, cond) {
 }
 
 
-function sendPush(receiverId, pushMessage) {
-    console.log(receiverId);
-
+function sendPush(receiverId, pushMessage, orderNo, orderStatus, vendorName) {
+    console.log('----PUSH START-----')
     var pushMessage = pushMessage;
     userDeviceLoginSchemaSchema
         .find({ userId: receiverId, userType: 'CUSTOMER' })
         .then(function (customers) {
-
+            // console.log('customers',customers);
             if (customers.length > 0) {
                 for (let customer of customers) {
 
-                    var msgStr = "";
-                    // msgStr += "~push_notification_id~:~" + pushID + "~";
+                    var msgStr = ",";
+                    msgStr += "~order_no~:~" + orderNo + "~";
+                    msgStr += "~order_status~:~" + orderStatus + "~";
+                    msgStr += "~restaurant_name~:~" + vendorName + "~";
                     var dataset = "{~message~:~" + pushMessage + "~" + msgStr + "}";
 
                     var deviceToken = customer.deviceToken;
+
+                    //  console.log('dataset',dataset);
 
                     if (customer.appType == 'ANDROID') {
 
@@ -324,7 +454,13 @@ function sendPush(receiverId, pushMessage) {
                             'alert': pushMessage,
                             'deviceToken': deviceToken,
                             'pushMode': customer.pushMode,
-                            'dataset': dataset
+                            // 'dataset': dataset
+                            'dataset': {
+                                "order_no": orderNo,
+                                "restaurant_name": vendorName,
+                                "order_status": orderStatus
+
+                            }
                         }
 
                         PushLib.sendPushAndroid(andPushData)
@@ -346,17 +482,22 @@ function sendPush(receiverId, pushMessage) {
                             'deviceToken': deviceToken,
                             'pushMode': customer.pushMode,
                             'pushTo': 'CUSTOMER',
-                            'dataset': {}
+                            'dataset': {
+                                "order_no": orderNo,
+                                "restaurant_name": vendorName,
+                                "order_status": orderStatus
+
+                            }
                         }
                         //SEND PUSH TO IOS [APN]
 
-                        // PushLib.sendPushIOS(iosPushData)
-                        //     .then(async function (success) { //PUSH SUCCESS
-                        //         console.log('push_success', success);
+                        PushLib.sendPushIOS(iosPushData)
+                            .then(async function (success) { //PUSH SUCCESS
+                                console.log('push_success', success);
 
-                        //     }).catch(async function (err) { //PUSH FAILED
-                        //         console.log('push_err', err);
-                        //     });
+                            }).catch(async function (err) { //PUSH FAILED
+                                console.log('push_err', err);
+                            });
                         //IOS PUSH END
                     }
                 }

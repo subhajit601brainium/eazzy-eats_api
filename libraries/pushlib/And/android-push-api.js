@@ -29,7 +29,7 @@ module.exports = {
                     return reject (err);
                 } 
                 else {
-                    console.log(response);
+                    console.log('ANDROID_RESPONSE',response);
                     if(response.success == 1) {
                         return resolve (true);
                     } else {

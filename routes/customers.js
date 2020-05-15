@@ -152,6 +152,22 @@ customerApi.post('/orderDetails',jwtTokenValidator.validateToken,restaurantValid
     orderService.orderDetails(req, function(result) {
         res.status(200).send(result);
     });
-})
+});
+
+
+
+/** All promo List */
+customerApi.post('/promoCodeList',jwtTokenValidator.validateToken,restaurantValidator.promoCodeList, function(req, res) {
+    orderService.promoCodeList(req, function(result) {
+        res.status(200).send(result);
+    });
+});
+
+/** Forgot Password */
+customerApi.post('/forgotEmail', customerValidator.forgotEmail, function(req, res) {
+    registerService.forgotEmail(req.body, function(result) {
+        res.status(200).send(result);
+    })
+});
 
 module.exports = customerApi;

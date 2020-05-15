@@ -182,7 +182,7 @@ module.exports = {
 
                                     for (let vendorTime of results.vendorOpenCloseTime) {
                                         var vendorTimeObj = {};
-                                        console.log(vendorTime);
+                                      //  console.log(vendorTime);
                                         if (everydayCheck == 1) {
 
                                             openTimeArr.push(vendorTime.openTime);
@@ -240,8 +240,8 @@ module.exports = {
 
                                 //Everyday Check
                                 if (everydayCheck == 1) {
-                                    console.log(openTimeArr);
-                                    console.log(closeTimeArr);
+                                    // console.log(openTimeArr);
+                                    // console.log(closeTimeArr);
                                     var uniqueOpen = openTimeArr.filter(onlyUnique);
                                     var uniqueClose = closeTimeArr.filter(onlyUnique);
                                     if ((uniqueOpen.length == 1) && (uniqueClose.length == 1)) {
@@ -333,7 +333,7 @@ module.exports = {
     //Customer Post Order API
     postOrder: (data, callBack) => {
         if (data) {
-            console.log(data);
+         //   console.log(data);
 
             // return;
 
@@ -352,9 +352,9 @@ module.exports = {
             }
            
 
-            console.log(checkJson);
-            console.log(appType);
-            console.log(items);
+            // console.log(checkJson);
+            // console.log(appType);
+            // console.log(items);
 
             var checkJson = true;
 
@@ -417,8 +417,10 @@ module.exports = {
                                 });
                             } else {
                                 if (results != null) {
+
+                                    
                                     //console.log(data);
-                                    console.log(itemsIdArr);
+                                   // console.log(itemsIdArr);
                                     var itemsCheck = await itemSchema.find({ _id: { $in: itemsIdArr } })
                                     var waitingTimeAll = 0;
 
@@ -429,9 +431,11 @@ module.exports = {
                                     }
                                     var orderVendorId = data.vendorId;
 
+                                    var orderNo = generateOrder();
+
                                     var ordersObj = {
                                         vendorId: data.vendorId,
-                                        orderNo: generateOrder(),
+                                        orderNo: orderNo,
                                         orderTime: new Date(),
                                         estimatedDeliveryTime: waitingTimeAll,
 
@@ -447,6 +451,7 @@ module.exports = {
 
                                         customerId: data.customerId,
                                         orderType: data.orderType,
+                                        deliveryPreference: data.deliveryPreference,
                                         orderStatus: 'NEW',
                                         price: data.price,
                                         discount: data.discount,
@@ -459,7 +464,7 @@ module.exports = {
 
 
 
-                                    console.log(orderDetailsItm);
+                                  //  console.log(orderDetailsItm);
 
                                     new orderSchema(ordersObj).save(async function (err, result) {
                                         if (err) {
@@ -496,7 +501,7 @@ module.exports = {
                                                         if (err) {
                                                             console.log(err);
                                                         } else {
-                                                            console.log(res);
+                                                           // console.log(res);
                                                         }
                                                     });
                                                 })
@@ -504,12 +509,15 @@ module.exports = {
                                             //SEND PUSH MESSAGE
                                             var pushMessage = 'You have received a new order'
                                             var receiverId = orderVendorId;
-                                            sendPush(receiverId, pushMessage);
+                                            sendPush(receiverId, pushMessage,orderNo);
+                                            var respOrder = {};
+                                            respOrder.order = ordersObj;
+                                            respOrder.orderDetails = orderDetailsArr;
                                             callBack({
                                                 success: true,
                                                 STATUSCODE: 200,
                                                 message: 'Order Updated Successfully.',
-                                                response_data: {}
+                                                response_data: respOrder
                                             });
 
                                         }
@@ -564,7 +572,7 @@ module.exports = {
             var response_data = {};
 
             // console.log(data.body);
-            console.log(searchVal);
+          //  console.log(searchVal);
 
             //SEARCH ALL RESTAURANT
             vendorSchema.find({
@@ -607,7 +615,7 @@ module.exports = {
                                         vendorIdres.push(itemRes.vendorId);
                                     }
                                 }
-                                console.log(vendorIdres);
+                              //  console.log(vendorIdres);
                                 vendorSchema.find({
                                     _id: { $in: vendorIdres },
                                     // location: {
@@ -622,7 +630,7 @@ module.exports = {
                                     isActive: true
                                 })
                                     .then(async function (results) {
-                                        console.log(results);
+                                       // console.log(results);
                                         // return;
                                         if (results.length > 0) {
                                             var vendorIds = [];
@@ -847,7 +855,7 @@ function generateOrder() {
     return orderNo;
 }
 
-function sendPush(receiverId, pushMessage) {
+function sendPush(receiverId, pushMessage,orderNo) {
    // console.log(receiverId);
    var pushMessage = pushMessage;
     vendorOwnerSchema
@@ -871,8 +879,8 @@ function sendPush(receiverId, pushMessage) {
                         for (let customer of customers) {
                             if(customer.deviceToken != '') {
 
-                                var msgStr = "";
-                                // msgStr += "~push_notification_id~:~" + pushID + "~";
+                                var msgStr = ",";
+                                msgStr += "~order_no~:~" + orderNo + "~";
                                 var dataset = "{~message~:~" + pushMessage + "~" + msgStr + "}";
     
                                 var deviceToken = customer.deviceToken;
@@ -885,15 +893,18 @@ function sendPush(receiverId, pushMessage) {
                                         'alert': pushMessage,
                                         'deviceToken': deviceToken,
                                         'pushMode': customer.pushMode,
-                                        'dataset': dataset
+                                        // 'dataset': dataset,
+                                        'dataset': {
+                                            "order_no": orderNo
+                                        }
                                     }
                                     PushLib.sendPushAndroid(andPushData)
                                         .then(async function (success) { //PUSH SUCCESS
     
-                                            console.log('push_success', success);
+                                            console.log('push_success_ANDROID', success);
                                         }).catch(async function (err) { //PUSH FAILED
     
-                                            console.log('push_err', err);
+                                            console.log('push_err_ANDROID', err);
                                         });
                                     //ANDROID PUSH END
     
@@ -906,17 +917,19 @@ function sendPush(receiverId, pushMessage) {
                                         'deviceToken': deviceToken,
                                         'pushMode': customer.pushMode,
                                         'pushTo': 'VENDOR',
-                                        'dataset': {}
+                                        'dataset': {
+                                            "order_no": orderNo
+                                        }
                                     }
                                     //SEND PUSH TO IOS [APN]
     
-                                    // PushLib.sendPushIOS(iosPushData)
-                                    //     .then(async function (success) { //PUSH SUCCESS
-                                    //         console.log('push_success', success);
+                                    PushLib.sendPushIOS(iosPushData)
+                                        .then(async function (success) { //PUSH SUCCESS
+                                            console.log('push_success_IOS', success);
     
-                                    //     }).catch(async function (err) { //PUSH FAILED
-                                    //         console.log('push_err', err);
-                                    //     });
+                                        }).catch(async function (err) { //PUSH FAILED
+                                            console.log('push_err_IOS', err);
+                                        });
                                     //IOS PUSH END
     
                                 }

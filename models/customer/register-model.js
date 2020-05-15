@@ -28,7 +28,7 @@ module.exports = {
                                     response_data: {}
                                 });
                             } if (count) {
-                                console.log(count);
+                               // console.log(count);
                                 nextCb(null, {
                                     success: false,
                                     STATUSCODE: 422,
@@ -341,7 +341,7 @@ module.exports = {
                                     })
 
                                 } else { //NORMAL LOGIN
-                                    console.log('hello');
+                                  //  console.log('hello');
                                     if ((data.password == '') || (data.password == undefined)) {
                                         callBack({
                                             success: false,
@@ -598,8 +598,8 @@ module.exports = {
     customerEditProfile: (data, callBack) => {
         if (data) {
             /** Check for customer existence */
-            console.log(data.customerId);
-            console.log(data.email);
+            // console.log(data.customerId);
+            // console.log(data.email);
             customerSchema.countDocuments({ email: data.email, loginType: data.loginType, _id: { $ne: data.customerId } }).exec(function (err, count) {
                 if (err) {
                     callBack({
@@ -803,7 +803,7 @@ module.exports = {
     },
     devicePush: (data, callBack) => {
         if (data) {
-            console.log(data);
+           // console.log(data);
             var loginId = data.loginId;
 
             //ADD DATA IN USER LOGIN DEVICE TABLE
@@ -1799,7 +1799,7 @@ module.exports = {
                 } else {
                     if (customer) {
                         // console.log(customer);
-                        console.log(data.password);
+                      //  console.log(data.password);
                         bcrypt.hash(data.password, 8, function (err, hash) {
                             if (err) {
                                 callBack({
@@ -1809,8 +1809,8 @@ module.exports = {
                                     response_data: {}
                                 });
                             } else {
-                                console.log(hash);
-                                console.log(customer._id);
+                               // console.log(hash);
+                               // console.log(customer._id);
                                 customerSchema.update({ _id: customer._id }, {
                                     $set: {
                                         password: hash
@@ -2096,6 +2096,89 @@ module.exports = {
 
 
 
+        }
+    },
+    forgotEmail: (data, callBack) => {
+        if (data) {
+
+            if(data.userType == 'customer') {
+                customerSchema.findOne({ phone: data.phone, loginType: 'GENERAL' }, function (err, customer) {
+                    if (err) {
+                        callBack({
+                            success: false,
+                            STATUSCODE: 500,
+                            message: 'Internal DB error',
+                            response_data: {}
+                        });
+                    } else {
+                        if (customer) {
+                            let forgotPasswordOtp = Math.random().toString().replace('0.', '').substr(0, 4);
+                            customer = customer.toObject();
+                            customer.forgotPasswordOtp = forgotPasswordOtp;
+                            try {
+                                mail('forgotEmailMail')(customer.email, customer).send();
+                                callBack({
+                                    success: false,
+                                    STATUSCODE: 200,
+                                    message: 'Please check your email. We have sent a code to be used to reset password.',
+                                    response_data: {
+                                        email: customer.email,
+                                        forgotPassOtp: forgotPasswordOtp
+                                    }
+                                });
+                            } catch (Error) {
+                                console.log('Something went wrong while sending email');
+                            }
+                        } else {
+                            callBack({
+                                success: false,
+                                STATUSCODE: 422,
+                                message: 'User not found',
+                                response_data: {}
+                            });
+                        }
+                    }
+                })
+            } else if(data.userType == 'vendorowner') {
+                vendorOwnerSchema.findOne({ phone: data.phone}, function (err, customer) {
+                    if (err) {
+                        callBack({
+                            success: false,
+                            STATUSCODE: 500,
+                            message: 'Internal DB error',
+                            response_data: {}
+                        });
+                    } else {
+                        if (customer) {
+                            let forgotPasswordOtp = Math.random().toString().replace('0.', '').substr(0, 4);
+                            customer = customer.toObject();
+                            customer.forgotPasswordOtp = forgotPasswordOtp;
+                            try {
+                                mail('forgotEmailMail')(customer.email, customer).send();
+                                callBack({
+                                    success: false,
+                                    STATUSCODE: 200,
+                                    message: 'Please check your email. We have sent a code to be used to reset password.',
+                                    response_data: {
+                                        email: customer.email,
+                                        forgotPassOtp: forgotPasswordOtp
+                                    }
+                                });
+                            } catch (Error) {
+                                console.log('Something went wrong while sending email');
+                            }
+                        } else {
+                            callBack({
+                                success: false,
+                                STATUSCODE: 422,
+                                message: 'User not found',
+                                response_data: {}
+                            });
+                        }
+                    }
+                })
+            }
+            
         }
     },
 }

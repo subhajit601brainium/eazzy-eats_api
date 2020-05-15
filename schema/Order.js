@@ -21,6 +21,7 @@ var orderSchema = new mongoose.Schema({
 
     customerId: { type: mongoose.Schema.Types.ObjectId, required: true,default: '5e68af6f7a611343eae69b9a' },
     orderType: { type: String, required: true, enum: ['NORMAL','SCHEDULE'],default: 'NORMAL' },
+    deliveryPreference : { type: String, required: true, enum: ['DELIVERY','PICKUP'],default: 'DELIVERY' },
     orderStatus: { type: String, required: true, enum: ['NEW','ACCEPTED', 'DELAYED', 'DELIVERED', 'COMPLETED','MODIFIED','CANCELLED','READY'],default: 'NEW'  },
     delayedTime: {type: Number},
     price: {type: Number, required: true,default: 60 },
