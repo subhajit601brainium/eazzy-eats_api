@@ -3,6 +3,7 @@ var vendorOwnerSchema = require('../../schema/VendorOwner');
 var bannerSchema = require('../../schema/Banner');
 var categorySchema = require('../../schema/Category');
 var vandorTimeSchema = require('../../schema/VendorOpenCloseTime');
+var userDeviceLoginSchema = require('../../schema/UserDeviceLogin');
 var ItemSchema = require('../../schema/Item');
 var ItemExtraSchema = require('../../schema/ItemExtra');
 const config = require('../../config');
@@ -15,6 +16,8 @@ module.exports = {
         if (data) {
             var files = data.files;
             var reqBody = data.body;
+
+            console.log(files);
 
 
             /** Check for vendor existence */
@@ -106,13 +109,32 @@ module.exports = {
                                                 response_data: {}
                                             });
                                         } else {
-
-                                            callBack({
-                                                success: true,
-                                                STATUSCODE: 200,
-                                                message: 'Vendor related information added successfully',
-                                                response_data: result
-                                            })
+                                            //ADD DATA IN USER LOGIN DEVICE TABLE
+                                            var userDeviceData = {
+                                                userId: user._id,
+                                                userType: 'VENDOR',
+                                                appType: reqBody.appType,
+                                                pushMode: reqBody.pushMode,
+                                                deviceToken: reqBody.deviceToken
+                                            }
+                                            new userDeviceLoginSchema(userDeviceData).save(async function (err, success) {
+                                                if (err) {
+                                                    console.log(err);
+                                                    nextCb(null, {
+                                                        success: false,
+                                                        STATUSCODE: 500,
+                                                        message: 'Internal DB error',
+                                                        response_data: {}
+                                                    });
+                                                } else {
+                                                    callBack({
+                                                        success: true,
+                                                        STATUSCODE: 200,
+                                                        message: 'Vendor related information added successfully',
+                                                        response_data: result
+                                                    });
+                                                }
+                                            });
                                         }
                                     });
                                 }
@@ -150,12 +172,19 @@ module.exports = {
             console.log(reqBody);
             var restaurantTime = reqBody.restaurantTime;
 
+            if (typeof restaurantTime == 'string') {
+                restaurantTimeObj = JSON.parse(restaurantTime);
+            } else {
+                restaurantTimeObj = restaurantTime;
+            }
+
+
+
             //CHECK if Restaurant Time data is valid Json or not
-            var checkJson = await isJson(restaurantTime);
+            var checkJson = true;
 
 
             if (checkJson == true) {
-                var restaurantTimeObj = JSON.parse(restaurantTime);
 
                 if (restaurantTimeObj.length > 0) {
                     var validateData = 0;
@@ -422,12 +451,27 @@ module.exports = {
                 var checkJson = await isJson(itemExtra);
             }
 
+            var itemOption = reqBody.itemOption;
 
-            if (checkJson == true) {
+            //CHECK if extra Item data is valid Json or not
+            if (itemOption == '') {
+                var checkJsonOption = true
+            } else {
+                var checkJsonOption = await isJson(itemOption);
+            }
+
+
+            if ((checkJson == true) && (checkJsonOption == true)) {
                 if (itemExtra != '') {
                     var itemExtraObj = JSON.parse(itemExtra);
                 } else {
                     var itemExtraObj = [];
+                }
+
+                if (itemOption != '') {
+                    var itemOptionObj = JSON.parse(itemOption);
+                } else {
+                    var itemOptionObj = [];
                 }
 
 
@@ -450,6 +494,9 @@ module.exports = {
                         price: reqBody.price,
                         waitingTime: reqBody.waitingTime,
                         menuImage: menuImage,
+                        itemOptions: itemOptionObj,
+                        discountType: reqBody.discountType,
+                        discountAmount: reqBody.discountAmount,
                         isActive: true,
                     };
 
@@ -561,28 +608,30 @@ module.exports = {
             var reqBody = data.body;
 
             var vendorId = reqBody.vendorId;
+            var itemId = reqBody.itemId;
+
+            var itemCond = { vendorId: vendorId }
+            itemCond._id = itemId;
+
 
             ItemSchema
-                .find({ vendorId: vendorId })
-                .then(async (items) => {
+                .findOne(itemCond)
+                .then(async (item) => {
                     var allItems = [];
-                    if (items.length > 0) {
-                        for (let item of items) {
-                            var itemsObj = {};
-                            var extraitem = await ItemExtraSchema.find({ itemId: item._id }, { _id: 1, itemName: 1, price: 1 });
+                    if (item != null) {
 
-                            itemsObj.item = item;
-                            itemsObj.itemExtra = extraitem;
+                        var itemsObj = {};
+                        var extraitem = await ItemExtraSchema.find({ itemId: itemId }, { _id: 1, itemName: 1, price: 1 });
 
-                            allItems.push(itemsObj);
+                        itemsObj.item = item;
+                        itemsObj.itemExtra = extraitem;
 
-                        }
                     }
                     callBack({
                         success: true,
                         STATUSCODE: 200,
                         message: 'Item list.',
-                        response_data: { itemlist: allItems }
+                        response_data: itemsObj
                     });
                 })
                 .catch((err) => {
@@ -598,6 +647,57 @@ module.exports = {
 
         }
     },
+    // //Item Get
+    // getItem: async (data, callBack) => {
+    //     if (data) {
+    //         var files = data.files;
+    //         var reqBody = data.body;
+
+    //         var vendorId = reqBody.vendorId;
+    //         var categoryId = reqBody.categoryId;
+
+    //         var itemCond = { vendorId: vendorId }
+
+    //         if ((categoryId != '') && (categoryId != undefined)) {
+    //             itemCond.categoryId = categoryId;
+    //         }
+
+    //         ItemSchema
+    //             .find(itemCond)
+    //             .then(async (items) => {
+    //                 var allItems = [];
+    //                 if (items.length > 0) {
+    //                     for (let item of items) {
+    //                         var itemsObj = {};
+    //                         var extraitem = await ItemExtraSchema.find({ itemId: item._id }, { _id: 1, itemName: 1, price: 1 });
+
+    //                         itemsObj.item = item;
+    //                         itemsObj.itemExtra = extraitem;
+
+    //                         allItems.push(itemsObj);
+
+    //                     }
+    //                 }
+    //                 callBack({
+    //                     success: true,
+    //                     STATUSCODE: 200,
+    //                     message: 'Item list.',
+    //                     response_data: { itemlist: allItems }
+    //                 });
+    //             })
+    //             .catch((err) => {
+    //                 console.log(err);
+    //                 callBack({
+    //                     success: false,
+    //                     STATUSCODE: 500,
+    //                     message: 'Something went wrong.',
+    //                     response_data: {}
+    //                 });
+    //             });
+
+
+    //     }
+    // },
     //Item Update
     updateItem: async (data, callBack) => {
         if (data) {
@@ -613,14 +713,28 @@ module.exports = {
                 var checkJson = await isJson(itemExtra);
             }
 
+            var itemOption = reqBody.itemOption;
 
-            if (checkJson == true) {
+            //CHECK if extra Item data is valid Json or not
+            if (itemOption == '') {
+                var checkJsonOption = true
+            } else {
+                var checkJsonOption = await isJson(itemOption);
+            }
+
+
+            if ((checkJson == true) && (checkJsonOption == true)) {
                 if (itemExtra != '') {
                     var itemExtraObj = JSON.parse(itemExtra);
                 } else {
                     var itemExtraObj = [];
                 }
 
+                if (itemOption != '') {
+                    var itemOptionObj = JSON.parse(itemOption);
+                } else {
+                    var itemOptionObj = [];
+                }
 
                 //License Upload
                 if (files.menuImage != undefined) {
@@ -641,6 +755,9 @@ module.exports = {
                         price: reqBody.price,
                         waitingTime: reqBody.waitingTime,
                         menuImage: menuImage,
+                        itemOptions: itemOptionObj,
+                        discountType: reqBody.discountType,
+                        discountAmount: reqBody.discountAmount,
                         isActive: true,
                     };
 
@@ -774,13 +891,21 @@ module.exports = {
                     categorySchema.find({ _id: { $in: categoryIds } }, { _id: 1, categoryName: 1 })
                         .then(async (categories) => {
                             var itemsArr = [];
+                            var categoryArr = [];
                             if (categories.length > 0) {
                                 for (let category of categories) {
                                     var catitemList = {};
+                                    var catListObj = {};
                                     catitemList.category = category;
-                                    catitemList.items = await ItemSchema.find({ vendorId: vendorId, categoryId: category._id });
+                                    var catItem = await ItemSchema.find({ vendorId: vendorId, categoryId: category._id });
+
+                                    catitemList.items = catItem;
+                                    catListObj.categoryName = category.categoryName;
+                                    catListObj._id = category._id;
+                                    catListObj.inItemCount = catItem.length;
 
                                     itemsArr.push(catitemList);
+                                    categoryArr.push(catListObj);
                                 }
                             }
 
@@ -788,7 +913,7 @@ module.exports = {
                                 success: true,
                                 STATUSCODE: 200,
                                 message: 'Item list.',
-                                response_data: { itemlist: itemsArr }
+                                response_data: { categoryList: categoryArr, itemlist: itemsArr }
                             });
 
                         })
@@ -855,8 +980,87 @@ module.exports = {
 
 
             /** Check for vendor existence */
-            vendorSchema.findOne({ _id: reqBody.vendorId }, async function (err, respons) {
-                if (err) {
+            vendorSchema.findOne({ _id: reqBody.vendorId })
+                .populate('vendorOpenCloseTime')
+                .then(function (results) {
+
+                    //Open time
+                    var vendorTimeArr = [];
+                    var openTimeArr = [];
+                    var closeTimeArr = [];
+                    if (results.vendorOpenCloseTime.length > 0) {
+                        if (results.vendorOpenCloseTime.length == 7) {
+                            var everydayCheck = 1;
+                        } else {
+                            var everydayCheck = 0;
+                        }
+
+
+                        for (let vendorTime of results.vendorOpenCloseTime) {
+                            var vendorTimeObj = {};
+                            //  console.log(vendorTime);
+                            if (everydayCheck == 1) {
+
+                                openTimeArr.push(vendorTime.openTime);
+                                closeTimeArr.push(vendorTime.closeTime);
+                            }
+                            //OPEN TIME CALCULATION
+                            var openTimeAMPM = '';
+                            var openTimeHours = '';
+                            var openTimeMin = '';
+                            if (vendorTime.openTime < 720) {
+                                var num = vendorTime.openTime;
+                                openTimeAMPM = 'am';
+                            } else {
+                                var num = (vendorTime.openTime - 720);
+                                openTimeAMPM = 'pm';
+                            }
+
+                            var openHours = (num / 60);
+                            var openrhours = Math.floor(openHours);
+                            var openminutes = (openHours - openrhours) * 60;
+                            var openrminutes = Math.round(openminutes);
+
+                            openTimeHours = openrhours;
+                            openTimeMin = openrminutes;
+
+                            //CLOSE TIME CALCULATION
+                            var closeTimeAMPM = '';
+                            var closeTimeHours = '';
+                            var closeTimeMin = '';
+                            if (vendorTime.closeTime < 720) {
+                                var num = vendorTime.closeTime;
+                                closeTimeAMPM = 'am';
+                            } else {
+                                var num = (vendorTime.closeTime - 720);
+                                closeTimeAMPM = 'pm';
+                            }
+
+                            var closeHours = (num / 60);
+                            var closerhours = Math.floor(closeHours);
+                            var closeminutes = (closeHours - closerhours) * 60;
+                            var closerminutes = Math.round(closeminutes);
+
+                            closeTimeHours = closerhours;
+                            closeTimeMin = closerminutes;
+
+                            vendorTimeObj.day = vendorTime.day;
+                            vendorTimeObj.openTime = `${openTimeHours}:${openTimeMin} ${openTimeAMPM}`
+                            vendorTimeObj.closeTime = `${closeTimeHours}:${closeTimeMin} ${closeTimeAMPM}`
+
+                            vendorTimeArr.push(vendorTimeObj);
+                        }
+                    }
+
+                    callBack({
+                        success: true,
+                        STATUSCODE: 200,
+                        message: 'Restaurant profile view.',
+                        response_data: { vendorTime: vendorTimeArr, vendor: results, imageUrl: `${config.serverhost}:${config.port}/img/vendor/` }
+                    });
+
+                })
+                .catch(function (err) {
                     console.log(err);
                     callBack({
                         success: false,
@@ -864,17 +1068,22 @@ module.exports = {
                         message: 'Internal DB error',
                         response_data: {}
                     });
-                } else {
+                });
+            // , async function (err, respons) {
+            // if (err) {
+            //     console.log(err);
+            //     callBack({
+            //         success: false,
+            //         STATUSCODE: 500,
+            //         message: 'Internal DB error',
+            //         response_data: {}
+            //     });
+            // } else {
 
-                    callBack({
-                        success: true,
-                        STATUSCODE: 200,
-                        message: 'Restaurant profile view.',
-                        response_data: { vendor: respons, imageUrl: `${config.serverhost}:${config.port}/img/vendor/` }
-                    });
 
-                }
-            });
+
+            // }
+
         }
     },
     //Vendor Details Update
@@ -1114,12 +1323,341 @@ module.exports = {
 
         }
     },
+    //verify User Before Changing Email/Phone
+    verifyUser: async (data, callBack) => {
+        if (data) {
+            var reqBody = data.body;
+
+
+            vendorSchema
+                .findOne({ _id:  reqBody.vendorId})
+                .then((vendorres) => {
+                    if (vendorres != null) {
+
+                        let forgotPasswordOtp = Math.random().toString().replace('0.', '').substr(0, 4);
+                        customer = {};
+                        customer.forgotPasswordOtp = forgotPasswordOtp;
+                        try {
+                            mail('verifyUserlMail')(vendorres.contactEmail, customer).send();
+                            callBack({
+                                success: false,
+                                STATUSCODE: 200,
+                                message: 'Please check your email. We have sent a code to be used to reset password.',
+                                response_data: {
+                                    email: customer.contactEmail,
+                                    otp: forgotPasswordOtp
+                                }
+                            });
+                        } catch (Error) {
+                            console.log('Something went wrong while sending email');
+                        }
+
+                    } else {
+                        callBack({
+                            success: false,
+                            STATUSCODE: 422,
+                            message: 'User not found.',
+                            response_data: {}
+                        });
+                    }
+                })
+                .catch((err) => {
+                    console.log(err);
+                    callBack({
+                        success: false,
+                        STATUSCODE: 400,
+                        message: 'Something went wrong.',
+                        response_data: {}
+                    });
+                });
+
+
+
+
+
+        }
+    },
+    //Vendor Email Update
+    updateVendorEmail: async (data, callBack) => {
+        if (data) {
+            var reqBody = data.body;
+
+            var updateVendor = {
+                contactEmail: reqBody.restaurantEmail,
+            }
+
+            vendorSchema
+                .findOne({ contactEmail: reqBody.restaurantEmail })
+                .then((vendorres) => {
+
+                    if (vendorres == null) {
+                        vendorSchema.update({ _id: reqBody.vendorId }, {
+                            $set: updateVendor
+                        }, function (err, res) {
+                            if (err) {
+                                callBack({
+                                    success: false,
+                                    STATUSCODE: 500,
+                                    message: 'Internal DB error',
+                                    response_data: {}
+                                });
+                            } else {
+                                callBack({
+                                    success: true,
+                                    STATUSCODE: 200,
+                                    message: 'Vendor email updated succsessfully.',
+                                    response_data: {}
+                                });
+                            }
+                        });
+                    } else {
+                        callBack({
+                            success: false,
+                            STATUSCODE: 422,
+                            message: 'Email already exists.',
+                            response_data: {}
+                        });
+                    }
+
+                })
+                .catch((err) => {
+                    console.log(err);
+                    callBack({
+                        success: false,
+                        STATUSCODE: 400,
+                        message: 'Something went wrong.',
+                        response_data: {}
+                    });
+                });
+
+
+
+
+
+        }
+    },
+     //Vendor Phone Update
+     updateVendorPhone: async (data, callBack) => {
+        if (data) {
+            var reqBody = data.body;
+
+            var updateVendor = {
+                countryCode: reqBody.countryCode,
+                contactPhone: reqBody.restaurantPhone,
+            }
+
+            vendorSchema
+                .findOne({ contactPhone: reqBody.restaurantPhone })
+                .then((vendorres) => {
+
+                    if (vendorres == null) {
+                        vendorSchema.update({ _id: reqBody.vendorId }, {
+                            $set: updateVendor
+                        }, function (err, res) {
+                            if (err) {
+                                callBack({
+                                    success: false,
+                                    STATUSCODE: 500,
+                                    message: 'Internal DB error',
+                                    response_data: {}
+                                });
+                            } else {
+                                callBack({
+                                    success: true,
+                                    STATUSCODE: 200,
+                                    message: 'Vendor phone updated succsessfully.',
+                                    response_data: {}
+                                });
+                            }
+                        });
+                    } else {
+                        callBack({
+                            success: false,
+                            STATUSCODE: 422,
+                            message: 'Email already exists.',
+                            response_data: {}
+                        });
+                    }
+
+                })
+                .catch((err) => {
+                    console.log(err);
+                    callBack({
+                        success: false,
+                        STATUSCODE: 400,
+                        message: 'Something went wrong.',
+                        response_data: {}
+                    });
+                });
+
+
+
+
+
+        }
+    },
+    //Banner Upload
+    bannerUpload: (data, callBack) => {
+        if (data) {
+            var files = data.files;
+            vendorSchema.findOne({ _id: data.body.vendorId }, async function (err, result) {
+                if (err) {
+                    callBack({
+                        success: false,
+                        STATUSCODE: 500,
+                        message: 'Internal DB error',
+                        response_data: {}
+                    });
+                } else {
+                    if (result) {
+                        if (result.banner != '') {
+                            var fs = require('fs');
+                            var filePath = `public/img/vendor/${result.banner}`;
+                            fs.unlink(filePath, (err) => { });
+                        }
+
+                        var detailsInfo = await uploadvendorImage(files.image, 'detailsbanner');
+                        console.log(detailsInfo);
+                        if (detailsInfo != 'error') {
+
+                            vendorSchema.update({ _id: data.body.vendorId }, {
+                                $set: { banner: detailsInfo }
+                            }, function (err, result) {
+                                console.log(result);
+                                callBack({
+                                    success: true,
+                                    STATUSCODE: 200,
+                                    message: 'Banner uploaded successfully.',
+                                    response_data: {}
+                                });
+
+                            })
+
+                        } else { //IF SOMEHOW LOGO UPLOAD FAILED
+                            callBack({
+                                success: false,
+                                STATUSCODE: 500,
+                                message: 'Internal error, Something went wrong.',
+                                response_data: {}
+                            });
+                        }
+                    }
+                }
+            });
+
+
+        }
+    },
+    //Logo Upload
+    logoUpload: (data, callBack) => {
+        if (data) {
+            var files = data.files;
+            vendorSchema.findOne({ _id: data.body.vendorId }, async function (err, result) {
+                if (err) {
+                    callBack({
+                        success: false,
+                        STATUSCODE: 500,
+                        message: 'Internal DB error',
+                        response_data: {}
+                    });
+                } else {
+                    if (result) {
+                        if (result.logo != '') {
+                            var fs = require('fs');
+                            var filePath = `public/img/vendor/${result.logo}`;
+                            fs.unlink(filePath, (err) => { });
+                        }
+
+                        var detailsInfo = await uploadvendorImage(files.image, 'logo');
+                        console.log(detailsInfo);
+                        if (detailsInfo != 'error') {
+
+                            vendorSchema.update({ _id: data.body.vendorId }, {
+                                $set: { logo: detailsInfo }
+                            }, function (err, result) {
+                                console.log(result);
+                                callBack({
+                                    success: true,
+                                    STATUSCODE: 200,
+                                    message: 'Logo uploaded successfully.',
+                                    response_data: {}
+                                });
+
+                            })
+
+                        } else { //IF SOMEHOW LOGO UPLOAD FAILED
+                            callBack({
+                                success: false,
+                                STATUSCODE: 500,
+                                message: 'Internal error, Something went wrong.',
+                                response_data: {}
+                            });
+                        }
+                    }
+                }
+            });
+
+
+        }
+    },
+    //Licence Upload
+    licenceUpload: (data, callBack) => {
+        if (data) {
+            var files = data.files;
+            vendorSchema.findOne({ _id: data.body.vendorId }, async function (err, result) {
+                if (err) {
+                    callBack({
+                        success: false,
+                        STATUSCODE: 500,
+                        message: 'Internal DB error',
+                        response_data: {}
+                    });
+                } else {
+                    if (result) {
+                        if (result.licenceImage != '') {
+                            var fs = require('fs');
+                            var filePath = `public/img/vendor/${result.licenceImage}`;
+                            fs.unlink(filePath, (err) => { });
+                        }
+
+                        var detailsInfo = await uploadvendorImage(files.image, 'licence');
+                        console.log(detailsInfo);
+                        if (detailsInfo != 'error') {
+
+                            vendorSchema.update({ _id: data.body.vendorId }, {
+                                $set: { licenceImage: detailsInfo }
+                            }, function (err, result) {
+                                console.log(result);
+                                callBack({
+                                    success: true,
+                                    STATUSCODE: 200,
+                                    message: 'Licence uploaded successfully.',
+                                    response_data: {}
+                                });
+
+                            })
+
+                        } else { //IF SOMEHOW LOGO UPLOAD FAILED
+                            callBack({
+                                success: false,
+                                STATUSCODE: 500,
+                                message: 'Internal error, Something went wrong.',
+                                response_data: {}
+                            });
+                        }
+                    }
+                }
+            });
+
+
+        }
+    },
 }
 
 //Vendor Related Image uplaod
 function uploadvendorImage(file, name) {
     return new Promise(function (resolve, reject) {
-
+        console.log(file.name);
         //Get image extension
         var ext = getExtension(file.name);
 

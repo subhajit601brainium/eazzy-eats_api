@@ -303,4 +303,124 @@ module.exports = {
             }
         });
     },
+    verifyUser: (data, callBack) => {
+        async.waterfall([
+            function(nextCb) {
+                restaurantModel.verifyUser(data, function(result) {
+                    nextCb(null, result);
+                })
+            }
+        ], function(err, result) {
+            if (err) {
+                callBack({
+                    success: false,
+                    STATUSCODE: 403,
+                    message: 'Request Forbidden',
+                    response_data: {}
+                })
+            } else {
+                callBack(result);
+            }
+        });
+    },
+    updateVendorEmail: (data, callBack) => {
+        async.waterfall([
+            function(nextCb) {
+                restaurantModel.updateVendorEmail(data, function(result) {
+                    nextCb(null, result);
+                })
+            }
+        ], function(err, result) {
+            if (err) {
+                callBack({
+                    success: false,
+                    STATUSCODE: 403,
+                    message: 'Request Forbidden',
+                    response_data: {}
+                })
+            } else {
+                callBack(result);
+            }
+        });
+    },
+    updateVendorPhone: (data, callBack) => {
+        async.waterfall([
+            function(nextCb) {
+                restaurantModel.updateVendorPhone(data, function(result) {
+                    nextCb(null, result);
+                })
+            }
+        ], function(err, result) {
+            if (err) {
+                callBack({
+                    success: false,
+                    STATUSCODE: 403,
+                    message: 'Request Forbidden',
+                    response_data: {}
+                })
+            } else {
+                callBack(result);
+            }
+        });
+    },
+    bannerUpload: (data, callBack) => {
+        async.waterfall([
+            function(nextCb) {
+                restaurantModel.bannerUpload(data, function(result) {
+                    nextCb(null, result);
+                })
+            }
+        ], function(err, result) {
+            if (err) {
+                callBack({
+                    success: false,
+                    STATUSCODE: 403,
+                    message: 'Request Forbidden',
+                    response_data: {}
+                })
+            } else {
+                callBack(result);
+            }
+        });
+    },
+    logoUpload: (data, callBack) => {
+        async.waterfall([
+            function(nextCb) {
+                restaurantModel.logoUpload(data, function(result) {
+                    nextCb(null, result);
+                })
+            }
+        ], function(err, result) {
+            if (err) {
+                callBack({
+                    success: false,
+                    STATUSCODE: 403,
+                    message: 'Request Forbidden',
+                    response_data: {}
+                })
+            } else {
+                callBack(result);
+            }
+        });
+    },
+    licenceUpload: (data, callBack) => {
+        async.waterfall([
+            function(nextCb) {
+                restaurantModel.licenceUpload(data, function(result) {
+                    nextCb(null, result);
+                })
+            }
+        ], function(err, result) {
+            if (err) {
+                callBack({
+                    success: false,
+                    STATUSCODE: 403,
+                    message: 'Request Forbidden',
+                    response_data: {}
+                })
+            } else {
+                callBack(result);
+            }
+        });
+    },
 }

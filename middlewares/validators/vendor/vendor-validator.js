@@ -2,6 +2,9 @@ var joi = require('@hapi/joi');
 
 module.exports = {
     addVendorValidator: async (req, res, next) => {
+        const appTypeVal = ["ANDROID", "IOS"];
+        const pushType = ["P", "S"];
+        console.log(req.body);
         const rules = joi.object({
             restaurantName: joi.string().required().error(new Error('Restaurant name is required')),
             managerName: joi.string().required().error(new Error('Manager name is required')),
@@ -27,6 +30,10 @@ module.exports = {
                     return new Error('Password and confirm password must match');
                 }
             }),
+
+            deviceToken: joi.string().required().error(new Error('Device token required')),
+            appType: joi.string().required().valid(...appTypeVal).error(new Error('App type required')),
+            pushMode: joi.string().required().valid(...pushType).error(new Error('Push mode required'))
 
             // firstName: joi.string().required().error(new Error('First name is required')),
             // lastName: joi.string().required().error(new Error('Last name is required')),
@@ -103,6 +110,7 @@ module.exports = {
     },
     itemAddValidator: async (req, res, next) => {
         var itemType = ['NON VEG', 'VEG'];
+        var discountType = ['FLAT', 'PERCENTAGE'];
         const rules = joi.object({
             customerId: joi.string().required().error(new Error('Customer id is required')),
             vendorId: joi.string().required().error(new Error('Vendor id is required')),
@@ -113,7 +121,10 @@ module.exports = {
             waitingTime: joi.number().required().error(new Error('Waiting time is required')),
             menuImage: joi.string().allow('').optional(),
             price: joi.number().required().error(new Error('Price is required')),
-            itemExtra: joi.string().allow('').optional()
+            itemExtra: joi.string().allow('').optional(),
+            itemOption: joi.string().allow('').optional(),
+            discountType: joi.string().valid(...discountType).error(new Error('Discount type is required')),
+            discountAmount: joi.string().required().error(new Error('Discount amount is required')),
         });
 
         const value = await rules.validate(req.body);
@@ -130,7 +141,8 @@ module.exports = {
     getItem: async (req, res, next) => {
         const rules = joi.object({
             customerId: joi.string().required().error(new Error('Customer id is required')),
-            vendorId: joi.string().required().error(new Error('Vendor id is required'))
+            vendorId: joi.string().required().error(new Error('Vendor id is required')),
+            itemId: joi.string().required().error(new Error('Item id is required'))
         });
 
         const value = await rules.validate(req.body);
@@ -146,6 +158,7 @@ module.exports = {
     },
     updateItem: async (req, res, next) => {
         var itemType = ['NON VEG', 'VEG'];
+        var discountType = ['FLAT', 'PERCENTAGE'];
         const rules = joi.object({
             customerId: joi.string().required().error(new Error('Customer id is required')),
             vendorId: joi.string().required().error(new Error('Vendor id is required')),
@@ -157,7 +170,27 @@ module.exports = {
             waitingTime: joi.number().required().error(new Error('Waiting time is required')),
             menuImage: joi.string().allow('').optional(),
             price: joi.number().required().error(new Error('Price is required')),
-            itemExtra: joi.string().allow('').optional()
+            itemExtra: joi.string().allow('').optional(),
+            itemOption: joi.string().allow('').optional(),
+            discountType: joi.string().valid(...discountType).error(new Error('Discount type is required')),
+            discountAmount: joi.string().required().error(new Error('Discount amount is required'))
+        });
+
+        const value = await rules.validate(req.body);
+        if (value.error) {
+            res.status(422).json({
+                success: false,
+                STATUSCODE: 422,
+                message: value.error.message
+            })
+        } else {
+            next();
+        }
+    },
+    itemList: async (req, res, next) => {
+        const rules = joi.object({
+            customerId: joi.string().required().error(new Error('Customer id is required')),
+            vendorId: joi.string().required().error(new Error('Vendor id is required'))
         });
 
         const value = await rules.validate(req.body);
@@ -205,7 +238,6 @@ module.exports = {
         }
     },
     updateVendorDetails: async (req, res, next) => {
-        console.log(req.body);
         const rules = joi.object({
             customerId: joi.string().required().error(new Error('Customer id is required')),
             vendorId: joi.string().required().error(new Error('Vendor id is required')),
@@ -248,5 +280,91 @@ module.exports = {
             next();
         } 
     },
-    
+    verifyUser: async (req, res, next) => {
+        const verifyType = ["EMAIL", "PHONE"];
+        const rules = joi.object({
+            customerId: joi.string().required().error(new Error('Customer id is required')),
+            vendorId: joi.string().required().error(new Error('Vendor id is required')),
+            verifyType: joi.string().valid(...verifyType).error(new Error('Verify Type is required')),
+        });
+
+        const value = await rules.validate(req.body);
+        if (value.error) {
+            res.status(422).json({
+                success: false,
+                STATUSCODE: 422,
+                message: value.error.message
+            })
+        } else {
+            next();
+        } 
+    },
+    updateVendorEmail: async (req, res, next) => {
+        console.log(req.body);
+        const rules = joi.object({
+            customerId: joi.string().required().error(new Error('Customer id is required')),
+            vendorId: joi.string().required().error(new Error('Vendor id is required')),
+            restaurantEmail: joi.string().email().error(new Error('Valid email is required')),
+        });
+
+        const value = await rules.validate(req.body);
+        if (value.error) {
+            res.status(422).json({
+                success: false,
+                STATUSCODE: 422,
+                message: value.error.message
+            })
+        } else {
+            next();
+        } 
+    },
+    updateVendorPhone: async (req, res, next) => {
+        console.log(req.body);
+        const rules = joi.object({
+            customerId: joi.string().required().error(new Error('Customer id is required')),
+            vendorId: joi.string().required().error(new Error('Vendor id is required')),
+            countryCode: joi.string().required().error(new Error('Country code is required')),
+            restaurantPhone: joi.number().integer().error(new Error('Valid phone no is required')),
+        });
+
+        const value = await rules.validate(req.body);
+        if (value.error) {
+            res.status(422).json({
+                success: false,
+                STATUSCODE: 422,
+                message: value.error.message
+            })
+        } else {
+            next();
+        } 
+    },
+    bannerUpload: async (req, res, next) => {
+        const rules = joi.object({
+            customerId: joi.string().required().error(new Error('Customer id is required')),
+            vendorId: joi.string().required().error(new Error('Vendor id is required'))
+        });
+
+        const imageRules = joi.object({
+            image: joi.object().required().error(new Error('File is required')),
+        });
+
+        const value = await rules.validate(req.body);
+        const imagevalue = await imageRules.validate(req.files);
+
+        if (value.error) {
+            res.status(422).json({
+                success: false,
+                STATUSCODE: 422,
+                message: value.error.message
+            })
+        } else if (imagevalue.error) {
+            res.status(422).json({
+                success: false,
+                STATUSCODE: 422,
+                message: 'Image is required'
+            })
+        } else {
+            next();
+        }
+    }
 }

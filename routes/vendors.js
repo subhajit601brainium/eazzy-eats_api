@@ -81,7 +81,7 @@ vendorApi.post('/updateItem',jwtTokenValidator.validateToken, vendorValidator.up
 });
 
 /** Item List */
-vendorApi.post('/itemList',jwtTokenValidator.validateToken, vendorValidator.getItem, function(req, res) {
+vendorApi.post('/itemList',jwtTokenValidator.validateToken, vendorValidator.itemList, function(req, res) {
     restaurantService.itemList(req, function(result) {
         res.status(200).send(result);
     })
@@ -101,12 +101,57 @@ vendorApi.post('/updateVendorDetails',jwtTokenValidator.validateToken, vendorVal
     })
 });
 
-/** Update Vendor Time */
+/** Update Banner */
 vendorApi.post('/updateVendorTime',jwtTokenValidator.validateToken, vendorValidator.updateVendorTime, function(req, res) {
     restaurantService.updateVendorTime(req, function(result) {
         res.status(200).send(result);
     })
 });
+
+/** Verify Infor Before Changing Email/Phone */
+vendorApi.post('/verifyUser',jwtTokenValidator.validateToken, vendorValidator.verifyUser, function(req, res) {
+    restaurantService.verifyUser(req, function(result) {
+        res.status(200).send(result);
+    })
+});
+
+/** Update Vendor Email */
+vendorApi.post('/updateVendorEmail',jwtTokenValidator.validateToken, vendorValidator.updateVendorEmail, function(req, res) {
+    restaurantService.updateVendorEmail(req, function(result) {
+        res.status(200).send(result);
+    })
+});
+
+/** Update Vendor Phone */
+vendorApi.post('/updateVendorPhone',jwtTokenValidator.validateToken, vendorValidator.updateVendorPhone, function(req, res) {
+    restaurantService.updateVendorPhone(req, function(result) {
+        res.status(200).send(result);
+    })
+});
+
+/** Banner upload */
+vendorApi.post('/bannerUpload',jwtTokenValidator.validateToken,vendorValidator.bannerUpload, function(req, res) {
+    restaurantService.bannerUpload(req, function(result) {
+        res.status(200).send(result);
+    });
+})
+
+
+/** logo upload */
+vendorApi.post('/logoUpload',jwtTokenValidator.validateToken,vendorValidator.bannerUpload, function(req, res) {
+    restaurantService.logoUpload(req, function(result) {
+        res.status(200).send(result);
+    });
+})
+
+
+/** Licence upload */
+vendorApi.post('/licenceUpload',jwtTokenValidator.validateToken,vendorValidator.bannerUpload, function(req, res) {
+    restaurantService.licenceUpload(req, function(result) {
+        res.status(200).send(result);
+    });
+})
+
 
 
 

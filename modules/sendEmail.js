@@ -24,6 +24,10 @@ module.exports = function (emailType) {
             subject: "Forgot Email",
             //html    : require('./forgotPasswordMail'),
         },
+        "verifyUserlMail": {
+            subject: "Verify User",
+            //html    : require('./forgotPasswordMail'),
+        },
         "forgotPasswordAdminMail": {
             subject: "Forgot Password",
             //html    : require('./forgotPasswordMail'),
@@ -78,6 +82,9 @@ module.exports = function (emailType) {
                         break;
                     case 'forgotEmailMail':
                         mailOption.text = `Hello ${data.firstName}, use ${data.forgotPasswordOtp} code to verify your account.`
+                        break;
+                    case 'verifyUserlMail':
+                        mailOption.text = `Hello, use ${data.forgotPasswordOtp} code to verify your account.`
                         break;
                     case 'forgotPasswordAdminMail':
                         mailOption.text = `Hello ${data.firstName}, Please copy below link and paste it in your browser to change your password.
