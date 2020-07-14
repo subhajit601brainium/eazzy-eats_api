@@ -6,13 +6,14 @@ var userDeviceLoginSchemaSchema = require('../../schema/UserDeviceLogin');
 var customerSchema = require('../../schema/Customer');
 var vendorSchema = require('../../schema/Vendor');
 var PushLib = require('../../libraries/pushlib/send-push');
+var UserNotificationSchema = require('../../schema/UserNotification');
 
 module.exports = {
     //Order Status
     orderStatus: (data, callBack) => {
         if (data) {
             var respData = {};
-            respData.orderStatus = ['NEW', 'ACCEPTED', 'READY', 'DELAYED', 'DELIVERED', 'COMPLETED'];
+            respData.orderStatus = ['NEW', 'ACCEPTED', 'READY', 'DELAYED', 'COLLECTED', 'COMPLETED'];
 
             callBack({
                 success: true,
@@ -49,9 +50,11 @@ module.exports = {
                             var orderDetailsArr = [];
                             orderObj.orderNo = order.orderNo;
                             orderObj.orderStatus = order.orderStatus;
+                            orderObj.orderStatusTime = listDateTimeFormat(order.orderStatusChangeTime);
                             orderObj.orderId = order._id;
                             orderObj.preparationTime = order.estimatedDeliveryTime;
                             orderObj.delayedTime = order.delayedTime;
+                            orderObj.orderCancelReason = order.orderCancelReason;
 
                             //Get Customer Info
                             var customerInfo = await customerSchema.findOne({ _id: order.customerId });
@@ -111,17 +114,19 @@ module.exports = {
     //Order Confirm
     orderConfirm: (data, callBack) => {
         if (data) {
-            // console.log(data);
+            console.log(data);
             var respData = {};
             var newOrderResult = ['ACCEPTED', 'MODIFIED', 'CANCELLED'];
-            var acceptedOrderResult = ['DELAYED', 'READY', 'DELIVERED', 'COMPLETED'];
-            var delayedOrderResult = ['READY', 'DELAYED', 'DELIVERED', 'COMPLETED'];
-            var readyOrderResult = ['DELIVERED', 'COMPLETED'];
+            var acceptedOrderResult = ['DELAYED', 'READY', 'COLLECTED', 'COMPLETED'];
+            var delayedOrderResult = ['READY', 'DELAYED', 'COLLECTED', 'COMPLETED'];
+            var readyOrderResult = ['COLLECTED', 'COMPLETED'];
             var deliveredOrderResult = ['COMPLETED'];
 
             var vendorId = data.vendorId;
             var orderId = data.orderId;
             var orderChangeRes = data.orderResult;
+
+
 
 
             orderSchema
@@ -132,26 +137,63 @@ module.exports = {
 
                         if (res.orderStatus == 'NEW') {
                             if (newOrderResult.includes(orderChangeRes)) {
-                                updateStatus({ orderStatus: orderChangeRes, }, { _id: orderId });
+                                
 
-                                if (orderChangeRes == 'ACCEPTED') {
-                                    //SEND PUSH MESSAGE
-                                    var pushMessage = 'Your order has been accepted'
-                                    var receiverId = res.customerId;
-                                    var orderNo = res.orderNo;
-                                    var orderStatus = orderChangeRes;
+                                if (orderChangeRes == 'CANCELLED') {
+                                    var cancellationReason = data.orderCancelReason;
 
-                                    //Fetch Vendor name
-                                    var vendorInfo = await vendorSchema.findOne({ _id: vendorId });
-                                    var vendorName = vendorInfo.restaurantName;
-                                    sendPush(receiverId, pushMessage, orderNo, orderStatus, vendorName);
+                                    if ((cancellationReason == '') || (cancellationReason == undefined)) {
+                                        callBack({
+                                            success: false,
+                                            STATUSCODE: 422,
+                                            message: 'Order Cancellation reason is required.',
+                                            response_data: {}
+                                        });
+                                    } else {
+                                        updateStatus({ orderStatus: orderChangeRes, orderStatusChangeTime: new Date(), orderCancelReason: cancellationReason }, { _id: orderId });
+                                        callBack({
+                                            success: true,
+                                            STATUSCODE: 200,
+                                            message: 'Order Status changes successfully.',
+                                            response_data: {}
+                                        });
+                                    }
+                                } else {
+                                    updateStatus({ orderStatus: orderChangeRes, orderStatusChangeTime: new Date() }, { _id: orderId });
+                                    if (orderChangeRes == 'ACCEPTED') {
+                                        //SEND PUSH MESSAGE
+                                        var pushMessage = 'Your order has been accepted'
+                                        var receiverId = res.customerId;
+                                        var orderNo = res.orderNo;
+                                        var orderStatus = orderChangeRes;
+
+                                        //Fetch Vendor name
+                                        var vendorInfo = await vendorSchema.findOne({ _id: vendorId });
+                                        var vendorName = vendorInfo.restaurantName;
+                                        sendPush(receiverId, pushMessage, orderNo, orderStatus, vendorName);
+
+                                        //ADD DATA IN NOTIFICATION TABLE
+                                        var userNotificationData = {
+                                            userId: receiverId,
+                                            userType: 'CUSTOMER',
+                                            title: 'order accept',
+                                            type: 'OrderAccept',
+                                            content: pushMessage,
+                                            isRead: 'NO'
+                                        }
+                                        new UserNotificationSchema(userNotificationData).save(async function (err, result) {
+                                            console.log('err',err);
+                                            console.log('result',result);
+                                        });
+                                    }
+                                    callBack({
+                                        success: true,
+                                        STATUSCODE: 200,
+                                        message: 'Order Status changes successfully.',
+                                        response_data: {}
+                                    });
                                 }
-                                callBack({
-                                    success: true,
-                                    STATUSCODE: 200,
-                                    message: 'Order Status changes successfully.',
-                                    response_data: {}
-                                });
+
 
                             } else {
                                 callBack({
@@ -179,7 +221,21 @@ module.exports = {
                                     var vendorName = vendorInfo.restaurantName;
                                     sendPush(receiverId, pushMessage, orderNo, orderStatus, vendorName);
 
-                                    updateStatus({ orderStatus: orderChangeRes, delayedTime: delayedTime }, { _id: orderId });
+                                    updateStatus({ orderStatus: orderChangeRes, delayedTime: delayedTime, orderStatusChangeTime: new Date() }, { _id: orderId });
+
+                                    //ADD DATA IN NOTIFICATION TABLE
+                                    var userNotificationData = {
+                                        userId: receiverId,
+                                        userType: 'CUSTOMER',
+                                        title: 'order delayed',
+                                        type: 'OrderDelayed',
+                                        content: pushMessage,
+                                        isRead: 'NO'
+                                    }
+                                    new UserNotificationSchema(userNotificationData).save(async function (err, result) {
+                                        console.log('err',err);
+                                        console.log('result',result);
+                                    });
                                 } else {
                                     if (orderChangeRes == 'READY') {
 
@@ -194,8 +250,22 @@ module.exports = {
                                         var vendorName = vendorInfo.restaurantName;
                                         sendPush(receiverId, pushMessage, orderNo, orderStatus, vendorName);
 
+                                        //ADD DATA IN NOTIFICATION TABLE
+                                        var userNotificationData = {
+                                            userId: receiverId,
+                                            userType: 'CUSTOMER',
+                                            title: 'order ready',
+                                            type: 'OrderReady',
+                                            content: pushMessage,
+                                            isRead: 'NO'
+                                        }
+                                        new UserNotificationSchema(userNotificationData).save(async function (err, result) {
+                                            console.log('err',err);
+                                            console.log('result',result);
+                                        });
+
                                     }
-                                    updateStatus({ orderStatus: orderChangeRes }, { _id: orderId });
+                                    updateStatus({ orderStatus: orderChangeRes, orderStatusChangeTime: new Date() }, { _id: orderId });
                                 }
 
 
@@ -210,7 +280,7 @@ module.exports = {
                                 callBack({
                                     success: false,
                                     STATUSCODE: 422,
-                                    message: 'Order result is either DELAYED OR DELIVERED OR COMPLETED.',
+                                    message: 'Order result is either DELAYED OR COLLECTED OR COMPLETED.',
                                     response_data: {}
                                 });
                             }
@@ -230,7 +300,21 @@ module.exports = {
                                     var vendorName = vendorInfo.restaurantName;
                                     sendPush(receiverId, pushMessage, orderNo, orderStatus, vendorName);
 
-                                    updateStatus({ orderStatus: orderChangeRes, delayedTime: delayedTime }, { _id: orderId });
+                                    //ADD DATA IN NOTIFICATION TABLE
+                                    var userNotificationData = {
+                                        userId: receiverId,
+                                        userType: 'CUSTOMER',
+                                        title: 'order delay',
+                                        type: 'OrderDelay',
+                                        content: pushMessage,
+                                        isRead: 'NO'
+                                    }
+                                    new UserNotificationSchema(userNotificationData).save(async function (err, result) {
+                                        console.log('err',err);
+                                        console.log('result',result);
+                                    });
+
+                                    updateStatus({ orderStatus: orderChangeRes, delayedTime: delayedTime, orderStatusChangeTime: new Date() }, { _id: orderId });
                                 } else if (orderChangeRes == 'READY') {
 
                                     //SEND PUSH MESSAGE
@@ -244,10 +328,23 @@ module.exports = {
                                     var vendorName = vendorInfo.restaurantName;
                                     sendPush(receiverId, pushMessage, orderNo, orderStatus, vendorName);
 
-                                    updateStatus({ orderStatus: orderChangeRes, }, { _id: orderId });
+                                    updateStatus({ orderStatus: orderChangeRes, orderStatusChangeTime: new Date() }, { _id: orderId });
 
+                                    //ADD DATA IN NOTIFICATION TABLE
+                                    var userNotificationData = {
+                                        userId: receiverId,
+                                        userType: 'CUSTOMER',
+                                        title: 'order ready',
+                                        type: 'OrderReady',
+                                        content: pushMessage,
+                                        isRead: 'NO'
+                                    }
+                                    new UserNotificationSchema(userNotificationData).save(async function (err, result) {
+                                        console.log('err',err);
+                                        console.log('result',result);
+                                    });
                                 } else {
-                                    updateStatus({ orderStatus: orderChangeRes, }, { _id: orderId });
+                                    updateStatus({ orderStatus: orderChangeRes, orderStatusChangeTime: new Date() }, { _id: orderId });
                                 }
 
 
@@ -262,13 +359,13 @@ module.exports = {
                                 callBack({
                                     success: false,
                                     STATUSCODE: 422,
-                                    message: 'Order result is either DELIVERED OR COMPLETED.',
+                                    message: 'Order result is either COLLECTED OR COMPLETED.',
                                     response_data: {}
                                 });
                             }
                         } else if (res.orderStatus == 'READY') {
                             if (readyOrderResult.includes(orderChangeRes)) {
-                                updateStatus({ orderStatus: orderChangeRes, }, { _id: orderId });
+                                updateStatus({ orderStatus: orderChangeRes, orderStatusChangeTime: new Date() }, { _id: orderId });
 
                                 callBack({
                                     success: true,
@@ -281,11 +378,11 @@ module.exports = {
                                 callBack({
                                     success: false,
                                     STATUSCODE: 422,
-                                    message: 'Order result must be DELIVERED or COMPLETED.',
+                                    message: 'Order result must be COLLECTED or COMPLETED.',
                                     response_data: {}
                                 });
                             }
-                        } else if (res.orderStatus == 'DELIVERED') {
+                        } else if (res.orderStatus == 'COLLECTED') {
                             if (deliveredOrderResult.includes(orderChangeRes)) {
                                 updateStatus({ orderStatus: orderChangeRes, }, { _id: orderId });
 
@@ -358,7 +455,7 @@ module.exports = {
                     if (orders.length > 0) {
 
                         for (let order of orders) {
-                            if (order.orderStatus == 'DELIVERED') {
+                            if (order.orderStatus == 'COLLECTED') {
                                 deliveredOrder.push(order);
                                 deliveredOrderCnt = deliveredOrder.length;
                             } else if (order.orderStatus == 'NEW') {
@@ -503,5 +600,36 @@ function sendPush(receiverId, pushMessage, orderNo, orderStatus, vendorName) {
                 }
             }
         })
+}
+
+function listDateTimeFormat(date) {
+    var dateFormatCheck = date;
+
+    var day = dateFormatCheck.getDate();
+
+    var month = (Number(dateFormatCheck.getMonth()) + 1);
+
+    if (Number(month) < 10) {
+        month = `0${month}`
+    }
+
+    var year = dateFormatCheck.getFullYear();
+
+    var hours = dateFormatCheck.getHours(); // => 9
+    if (hours < 10) {
+        hours = `0${hours}`
+    }
+    var minutes = dateFormatCheck.getMinutes(); // =>  30
+    if (minutes < 10) {
+        minutes = `0${minutes}`
+    }
+    var seconds = dateFormatCheck.getSeconds(); // => 51
+    if (seconds < 10) {
+        seconds = `0${seconds}`
+    }
+
+    var dateformat = `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+
+    return dateformat;
 }
 

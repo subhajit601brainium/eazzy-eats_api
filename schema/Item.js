@@ -11,9 +11,11 @@ var itemSchema = new mongoose.Schema({
     price: { type: Number, required: true },
     waitingTime: { type: Number, required: true },
     menuImage: { type: String, allow: ''},
-    itemOptions: { type: Object, allow: ''},
-    discountType: { type: String, enum: ['FLAT', 'PERCENTAGE'] },
-    discountAmount: { type: Number, required: true },
+    itemOptions: { type: Object, allow: '', default: []},
+    discountType: { type: String, enum: ['FLAT', 'PERCENTAGE','NONE'], default: 'NONE' },
+    discountAmount: { type: Number, default: 0},
+    validityFrom: {type: Date, default: new Date},
+    validityTo: {type: Date, default: new Date},
     isActive: { type: Boolean, default: false },
 }, {
     timestamps: true

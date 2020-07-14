@@ -149,6 +149,8 @@ module.exports = {
 
     resetPassword: async (req, res, next) => {
         const userTypeVal = ["customer", "deliveryboy", "vendorowner", "admin"];
+        const appTypeVal = ["ANDROID", "IOS", "BROWSER"];
+        const pushType = ["P", "S"];
         const rules = joi.object({
             email: joi.string().required().email().error((err) => {
                 if (err[0].value === undefined || err[0].value === '' || err[0].value === null) {
@@ -165,7 +167,10 @@ module.exports = {
                     return new Error('Password and confirm password must match');
                 }
             }),
-            userType: joi.string().required().valid(...userTypeVal).error(new Error('Please send userType'))
+            userType: joi.string().required().valid(...userTypeVal).error(new Error('Please send userType')),
+            deviceToken: joi.string().error(new Error('Device token required')),
+            appType: joi.string().valid(...appTypeVal).error(new Error('App type required')),
+            pushMode: joi.string().valid(...pushType).error(new Error('Push mode required'))
         });
 
         const value = await rules.validate(req.body);

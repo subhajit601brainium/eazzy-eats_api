@@ -117,7 +117,7 @@ customerApi.post('/dashboard',jwtTokenValidator.validateToken,restaurantValidato
     restaurantService.customerHome(req, function(result) {
         res.status(200).send(result);
     });
-})
+});
 
 /** Restaurant Details */
 customerApi.post('/vendorDetails',jwtTokenValidator.validateToken,restaurantValidator.restaurantDetailsValidator, function(req, res) {
@@ -132,6 +132,41 @@ customerApi.post('/postOrder',jwtTokenValidator.validateToken,restaurantValidato
         res.status(200).send(result);
     });
 })
+
+/** Order Submit */
+customerApi.post('/submitReview',jwtTokenValidator.validateToken,restaurantValidator.submitReview, function(req, res) {
+    restaurantService.submitReview(req.body, function(result) {
+        res.status(200).send(result);
+    });
+})
+
+/** Add Address */
+customerApi.post('/addAddress',jwtTokenValidator.validateToken,restaurantValidator.addAddress, function(req, res) {
+    restaurantService.addAddress(req, function(result) {
+        res.status(200).send(result);
+    });
+});
+
+/** Edit Address */
+customerApi.post('/editAddress',jwtTokenValidator.validateToken,restaurantValidator.editAddress, function(req, res) {
+    restaurantService.editAddress(req, function(result) {
+        res.status(200).send(result);
+    });
+});
+
+/** List Address */
+customerApi.post('/listAddress',jwtTokenValidator.validateToken,restaurantValidator.listAddress, function(req, res) {
+    restaurantService.listAddress(req, function(result) {
+        res.status(200).send(result);
+    });
+});
+
+/** Delete Address */
+customerApi.post('/deleteAddress',jwtTokenValidator.validateToken,restaurantValidator.deleteAddress, function(req, res) {
+    restaurantService.deleteAddress(req, function(result) {
+        res.status(200).send(result);
+    });
+});
 
 /** Search */
 customerApi.post('/search',jwtTokenValidator.validateToken,restaurantValidator.customerSearchValidator, function(req, res) {
@@ -170,4 +205,18 @@ customerApi.post('/forgotEmail', customerValidator.forgotEmail, function(req, re
     })
 });
 
+
+/** Favourite/unfavorite */
+customerApi.post('/favouriteChange',jwtTokenValidator.validateToken,restaurantValidator.favouriteChange, function(req, res) {
+    restaurantService.favouriteChange(req, function(result) {
+        res.status(200).send(result);
+    });
+});
+
+/** Favourite/unfavorite */
+customerApi.post('/favouriteList',jwtTokenValidator.validateToken,restaurantValidator.favouriteList, function(req, res) {
+    restaurantService.favouriteList(req, function(result) {
+        res.status(200).send(result);
+    });
+});
 module.exports = customerApi;

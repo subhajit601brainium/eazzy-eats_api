@@ -7,7 +7,8 @@ module.exports = {
             customerId: joi.string().allow('').optional(),
             userType: joi.string().valid(...userType).error(new Error('Please send userType')),
             latitude: joi.string().required().error(new Error('Latitude required')),
-            longitude: joi.string().required().error(new Error('Longitude required'))
+            longitude: joi.string().required().error(new Error('Longitude required')),
+            categoryId: joi.string().allow('').optional()
         });
 
         const value = await rules.validate(req.body);
@@ -18,6 +19,8 @@ module.exports = {
                 message: value.error.message
             })
         } else {
+            var customerId = req.body.customerId;
+
             if((userType == 'CUSTOMER') && (customerId == '')) {
                 res.status(422).json({
                     success: false,
@@ -50,6 +53,7 @@ module.exports = {
                 message: value.error.message
             })
         } else {
+            var customerId = req.body.customerId;
             if((userType == 'CUSTOMER') && (customerId == '')) {
                 res.status(422).json({
                     success: false,
@@ -101,6 +105,39 @@ module.exports = {
                 message: value.error.message
             })
         } else {
+            var customerId = req.body.customerId;
+            if((userType == 'CUSTOMER') && (customerId == '')) {
+                res.status(422).json({
+                    success: false,
+                    STATUSCODE: 422,
+                    message: 'Customer Id is required'
+                })
+            } else {
+                next();
+            }
+            
+        }
+    },
+    submitReview: async (req, res, next) => {
+        var userType = ['CUSTOMER','GUEST']
+        const rules = joi.object({
+            customerId: joi.string().allow('').optional(),
+            userType: joi.string().valid(...userType).error(new Error('Please send userType')),
+            vendorId: joi.string().required().error(new Error('vendor Id is required')),
+            customerName: joi.string().required().error(new Error('Customer name is required')),
+            customerComment: joi.string().required().error(new Error('Customer comment is required')),
+            customerRating: joi.number().required().error(new Error('Customer rating is required')),
+        });
+
+        const value = await rules.validate(req.body);
+        if (value.error) {
+            res.status(422).json({
+                success: false,
+                STATUSCODE: 422,
+                message: value.error.message
+            })
+        } else {
+            var customerId = req.body.customerId;
             if((userType == 'CUSTOMER') && (customerId == '')) {
                 res.status(422).json({
                     success: false,
@@ -130,6 +167,7 @@ module.exports = {
                 message: value.error.message
             })
         } else {
+            var customerId = req.body.customerId;
             if((userType == 'CUSTOMER') && (customerId == '')) {
                 res.status(422).json({
                     success: false,
@@ -158,6 +196,7 @@ module.exports = {
                 message: value.error.message
             })
         } else {
+            var customerId = req.body.customerId;
             if((userType == 'CUSTOMER') && (customerId == '')) {
                 res.status(422).json({
                     success: false,
@@ -185,6 +224,7 @@ module.exports = {
                 message: value.error.message
             })
         } else {
+            var customerId = req.body.customerId;
             if((userType == 'CUSTOMER') && (customerId == '')) {
                 res.status(422).json({
                     success: false,
@@ -215,6 +255,7 @@ module.exports = {
                 message: value.error.message
             })
         } else {
+            var customerId = req.body.customerId;
             if((userType == 'CUSTOMER') && (customerId == '')) {
                 res.status(422).json({
                     success: false,
@@ -227,5 +268,175 @@ module.exports = {
             
         }
     },
-    
+    favouriteChange: async (req, res, next) => {
+        var userType = ['CUSTOMER']
+        var favVal = ['YES','NO']
+        const rules = joi.object({
+            customerId: joi.string().required().error(new Error('Customer id is required')),
+            userType: joi.string().valid(...userType).error(new Error('Guest user is not allowed')),
+            vendorId: joi.string().required().error(new Error('Vendor id is required')),
+            favourite: joi.string().required().valid(...favVal).error(new Error('Favourite value is required')),
+        });
+
+        const value = await rules.validate(req.body);
+        if (value.error) {
+            res.status(422).json({
+                success: false,
+                STATUSCODE: 422,
+                message: value.error.message
+            })
+        } else {
+            next();
+        }
+    },
+    favouriteList: async (req, res, next) => {
+        var userType = ['CUSTOMER']
+        const rules = joi.object({
+            customerId: joi.string().required().error(new Error('Customer id is required')),
+            userType: joi.string().valid(...userType).error(new Error('Guest user is not allowed')),
+            latitude: joi.string().required().error(new Error('Latitude required')),
+            longitude: joi.string().required().error(new Error('Longitude required')),
+        });
+
+        const value = await rules.validate(req.body);
+        if (value.error) {
+            res.status(422).json({
+                success: false,
+                STATUSCODE: 422,
+                message: value.error.message
+            })
+        } else {
+            next();
+        }
+    },
+    addAddress: async (req, res, next) => {
+        var userType = ['CUSTOMER']
+        const rules = joi.object({
+            customerId: joi.string().allow('').optional(),
+            userType: joi.string().valid(...userType).error(new Error('Please send userType')),
+            fullAddress: joi.string().allow('').optional(),
+            houseNo: joi.string().allow('').optional(),
+            landMark: joi.string().allow('').optional(),
+            phone: joi.string().allow('').optional(),
+            countryCode: joi.string().allow('').optional(),
+            addressType: joi.string().allow('').optional(),
+            latitude: joi.string().required().error(new Error('Latitude required')),
+            longitude: joi.string().required().error(new Error('Longitude required'))
+        });
+
+        const value = await rules.validate(req.body);
+        if (value.error) {
+            res.status(422).json({
+                success: false,
+                STATUSCODE: 422,
+                message: value.error.message
+            })
+        } else {
+            var customerId = req.body.customerId;
+            if((userType == 'CUSTOMER') && (customerId == '')) {
+                res.status(422).json({
+                    success: false,
+                    STATUSCODE: 422,
+                    message: 'Customer Id is required'
+                })
+            } else {
+                next();
+            }
+            
+        }
+    },
+    editAddress: async (req, res, next) => {
+        var userType = ['CUSTOMER']
+        const rules = joi.object({
+            customerId: joi.string().allow('').optional(),
+            userType: joi.string().valid(...userType).error(new Error('Please send userType')),
+            addressId: joi.string().required().error(new Error('Address id required')),
+            fullAddress: joi.string().allow('').optional(),
+            houseNo: joi.string().allow('').optional(),
+            landMark: joi.string().allow('').optional(),
+            phone: joi.string().allow('').optional(),
+            countryCode: joi.string().allow('').optional(),
+            addressType: joi.string().allow('').optional(),
+            latitude: joi.string().required().error(new Error('Latitude required')),
+            longitude: joi.string().required().error(new Error('Longitude required'))
+        });
+
+        const value = await rules.validate(req.body);
+        if (value.error) {
+            res.status(422).json({
+                success: false,
+                STATUSCODE: 422,
+                message: value.error.message
+            })
+        } else {
+            var customerId = req.body.customerId;
+            if((userType == 'CUSTOMER') && (customerId == '')) {
+                res.status(422).json({
+                    success: false,
+                    STATUSCODE: 422,
+                    message: 'Customer Id is required'
+                })
+            } else {
+                next();
+            }
+            
+        }
+    },
+    listAddress: async (req, res, next) => {
+        var userType = ['CUSTOMER']
+        const rules = joi.object({
+            customerId: joi.string().allow('').optional(),
+            userType: joi.string().valid(...userType).error(new Error('Please send userType'))
+        });
+
+        const value = await rules.validate(req.body);
+        if (value.error) {
+            res.status(422).json({
+                success: false,
+                STATUSCODE: 422,
+                message: value.error.message
+            })
+        } else {
+            var customerId = req.body.customerId;
+            if((userType == 'CUSTOMER') && (customerId == '')) {
+                res.status(422).json({
+                    success: false,
+                    STATUSCODE: 422,
+                    message: 'Customer Id is required'
+                })
+            } else {
+                next();
+            }
+            
+        }
+    },
+    deleteAddress: async (req, res, next) => {
+        var userType = ['CUSTOMER']
+        const rules = joi.object({
+            customerId: joi.string().allow('').optional(),
+            userType: joi.string().valid(...userType).error(new Error('Please send userType')),
+            addressId: joi.string().required().error(new Error('Address id required')),
+        });
+
+        const value = await rules.validate(req.body);
+        if (value.error) {
+            res.status(422).json({
+                success: false,
+                STATUSCODE: 422,
+                message: value.error.message
+            })
+        } else {
+            var customerId = req.body.customerId;
+            if((userType == 'CUSTOMER') && (customerId == '')) {
+                res.status(422).json({
+                    success: false,
+                    STATUSCODE: 422,
+                    message: 'Customer Id is required'
+                })
+            } else {
+                next();
+            }
+            
+        }
+    },
 }

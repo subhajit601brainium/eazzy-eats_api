@@ -6,10 +6,8 @@ const config = require('../config');
  * @description : Middleware function for validating request data and JWT token.
  */
 exports.validateToken = async (req, res, next) => {
-      console.log(req.body);
 
-      console.log(req.headers['authorization']);
-     var whitelistUrl = ['/api/customer/dashboard','/api/customer/vendorDetails','/api/customer/postOrder','/api/customer/orderList','/api/customer/orderDetails','/api/customer/search']
+     var whitelistUrl = ['/api/customer/dashboard','/api/customer/vendorDetails','/api/customer/postOrder','/api/customer/orderList','/api/customer/orderDetails','/api/customer/search','/api/customer/submitReview']
 
     if ((whitelistUrl.includes(req.originalUrl)) && (req.body.userType == 'GUEST')) {
         next();

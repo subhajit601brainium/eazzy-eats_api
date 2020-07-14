@@ -3,14 +3,15 @@ var mongoose = require('mongoose');
 var vendorSchema = new mongoose.Schema({
     restaurantName: { type: String, required: true },
     description: { type: String},
-    managerName: { type: String, required: true },
-    restaurantType: { type: String, enum: ['VEG', 'NON VEG', 'BOTH'] },
+    managerName: { type: String},
+    restaurantType: { type: String},
     contactEmail: { type: String, email: true, unique: true },
     countryCode: { type: String, required: true },
     contactPhone: { type: Number, unique: true },
-    logo: { type: String, required: true },
-    banner: { type: String, required: true },
+    logo: { type: String },
+    banner: { type: String},
     rating: { type: Number, default: 0 },
+    preOrder: { type: String, enum: ['ON', 'OFF'], default: 'ON' },
     licenceImage: { type: String, default: ''},
     address: { type: String, default: ''},
     location: {
@@ -23,6 +24,7 @@ var vendorSchema = new mongoose.Schema({
         }
     },
     isActive: { type: Boolean, default: false },
+    restaurantClose: { type: Boolean, default: true },
     vendorOpenCloseTime: [{ type: mongoose.Schema.Types.ObjectId, ref: 'vendorOpenCloseTime' }]
 }, {
     timestamps: true

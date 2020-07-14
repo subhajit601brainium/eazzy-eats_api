@@ -11,6 +11,9 @@ const config = require('./config');
 const mongoose = require('mongoose');
 var cors = require('cors');
 const corsMiddleWare = require('./middlewares/cors-middleware');
+var cronFileCommon = require('./modules/cron/common.js');
+
+cronFileCommon.autoDelayOrder();
 
 var app = express();
 app.use(cors());

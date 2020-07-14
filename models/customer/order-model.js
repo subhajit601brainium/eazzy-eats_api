@@ -22,7 +22,7 @@ module.exports = {
 
             var findCond = { customerId: customerId };
             if(orderStatus == 'ONGOING') {
-               var orCond = [ {'orderStatus':'NEW'}, {'orderStatus':'ACCEPTED'}, {'orderStatus':'DELAYED'}, {'orderStatus':'DELIVERED'}, {'orderStatus':'MODIFIED'}, {'orderStatus':'READY'}]
+               var orCond = [ {'orderStatus':'NEW'}, {'orderStatus':'ACCEPTED'}, {'orderStatus':'DELAYED'}, {'orderStatus':'COLLECTED'}, {'orderStatus':'MODIFIED'}, {'orderStatus':'READY'}]
             } else {
                 var orCond = [ {'orderStatus':'COMPLETED'}, {'orderStatus':'CANCELLED'}]
             }

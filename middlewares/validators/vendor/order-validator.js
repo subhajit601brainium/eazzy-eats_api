@@ -28,6 +28,7 @@ module.exports = {
             orderId: joi.string().required().error(new Error('Order Id is required')),
             orderResult: joi.string().required().error(new Error('Please Select order Result')),
             delayedTimeMin: joi.string().allow(''),
+            orderCancelReason : joi.string().allow(''),
         });
 
         const value = await rules.validate(req.body);

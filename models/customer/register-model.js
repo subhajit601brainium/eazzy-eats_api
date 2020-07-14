@@ -28,7 +28,7 @@ module.exports = {
                                     response_data: {}
                                 });
                             } if (count) {
-                               // console.log(count);
+                                // console.log(count);
                                 nextCb(null, {
                                     success: false,
                                     STATUSCODE: 422,
@@ -208,6 +208,7 @@ module.exports = {
                                                     phone: result.phone.toString(),
                                                     socialId: result.socialId,
                                                     id: result._id,
+                                                    loginId: loginId,
                                                     profileImage: '',
                                                     userType: 'customer',
                                                     loginType: loginType
@@ -263,22 +264,29 @@ module.exports = {
         if (data) {
 
             var loginUser = '';
+            var loginErrMsg = '';
 
 
             if (data.loginType != 'EMAIL') {
                 loginUser = 'SOCIAL';
                 var loginCond = { socialId: data.user };
+                loginErrMsg = 'Invalid login credentials'
             } else {
                 if (/^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/.test(data.user)) {
                     var loginCond = { email: data.user, loginType: 'GENERAL' };
                     loginUser = 'EMAIL';
+                    loginErrMsg = 'Invalid email or password'
                 } else {
                     var loginCond = { phone: data.user, loginType: 'GENERAL' };
                     loginUser = 'PHONE';
+                    loginErrMsg = 'Invalid phone or password'
                 }
             }
 
+            console.log(loginUser);
+
             customerSchema.findOne(loginCond, function (err, result) {
+
                 if (err) {
                     callBack({
                         success: false,
@@ -322,6 +330,7 @@ module.exports = {
                                             firstName: result.firstName,
                                             lastName: result.lastName,
                                             email: result.email,
+                                            countryCode: result.countryCode,
                                             phone: result.phone.toString(),
                                             socialId: result.socialId,
                                             id: result._id,
@@ -341,7 +350,7 @@ module.exports = {
                                     })
 
                                 } else { //NORMAL LOGIN
-                                  //  console.log('hello');
+                                    //  console.log('hello');
                                     if ((data.password == '') || (data.password == undefined)) {
                                         callBack({
                                             success: false,
@@ -380,7 +389,7 @@ module.exports = {
                                             callBack({
                                                 success: false,
                                                 STATUSCODE: 422,
-                                                message: 'Invalid email or password',
+                                                message: loginErrMsg,
                                                 response_data: {}
                                             });
                                         }
@@ -398,10 +407,11 @@ module.exports = {
                                 response_data: {}
                             });
                         } else {
+
                             callBack({
                                 success: false,
                                 STATUSCODE: 422,
-                                message: 'Invalid email or password',
+                                message: loginErrMsg,
                                 response_data: {}
                             });
                         }
@@ -423,7 +433,7 @@ module.exports = {
                     });
                 } else {
                     if (customer) {
-                        let forgotPasswordOtp = Math.random().toString().replace('0.', '').substr(0, 4);
+                        let forgotPasswordOtp = Math.random().toString().replace('0.', '').substr(0, 6);
                         customer = customer.toObject();
                         customer.forgotPasswordOtp = forgotPasswordOtp;
                         try {
@@ -454,7 +464,7 @@ module.exports = {
     },
     customerResetPassword: (data, callBack) => {
         if (data) {
-            customerSchema.findOne({ email: data.email, loginType: 'GENERAL' }, { _id: 1 }, function (err, customer) {
+            customerSchema.findOne({ email: data.email, loginType: 'GENERAL' }, function (err, customer) {
                 if (err) {
                     callBack({
                         success: false,
@@ -486,12 +496,51 @@ module.exports = {
                                             response_data: {}
                                         });
                                     } else {
-                                        callBack({
-                                            success: true,
-                                            STATUSCODE: 200,
-                                            message: 'Password updated successfully',
-                                            response_data: {}
-                                        });
+                                        //ADD DATA IN USER LOGIN DEVICE TABLE
+                                        var userDeviceData = {
+                                            userId: customer._id,
+                                            userType: 'CUSTOMER',
+                                            appType: data.appType,
+                                            pushMode: data.pushMode,
+                                            deviceToken: data.deviceToken
+                                        }
+                                        new userDeviceLoginSchema(userDeviceData).save(async function (err, success) {
+                                            if (err) {
+                                                console.log(err);
+                                                nextCb(null, {
+                                                    success: false,
+                                                    STATUSCODE: 500,
+                                                    message: 'Internal DB error',
+                                                    response_data: {}
+                                                });
+                                            } else {
+                                                var loginId = success._id;
+                                                console.log(customer);
+                                                const authToken = generateToken(customer);
+                                                let response = {
+                                                    userDetails: {
+                                                        firstName: customer.firstName,
+                                                        lastName: customer.lastName,
+                                                        email: customer.email,
+                                                        phone: customer.phone.toString(),
+                                                        socialId: customer.socialId,
+                                                        id: customer._id,
+                                                        loginId: loginId,
+                                                        profileImage: `${config.serverhost}:${config.port}/img/profile-pic/` + customer.profileImage,
+                                                        userType: data.userType,
+                                                        loginType: 'GENERAL'
+                                                    },
+                                                    authToken: authToken
+                                                }
+                                                callBack({
+                                                    success: true,
+                                                    STATUSCODE: 200,
+                                                    message: 'Password updated successfully',
+                                                    response_data: response
+                                                });
+                                            }
+                                        })
+
                                     }
                                 })
                             }
@@ -520,7 +569,7 @@ module.exports = {
                     });
                 } else {
                     if (customer) {
-                        let forgotPasswordOtp = Math.random().toString().replace('0.', '').substr(0, 4);
+                        let forgotPasswordOtp = Math.random().toString().replace('0.', '').substr(0, 6);
                         customer = customer.toObject();
                         customer.forgotPasswordOtp = forgotPasswordOtp;
                         try {
@@ -803,7 +852,7 @@ module.exports = {
     },
     devicePush: (data, callBack) => {
         if (data) {
-           // console.log(data);
+            // console.log(data);
             var loginId = data.loginId;
 
             //ADD DATA IN USER LOGIN DEVICE TABLE
@@ -831,10 +880,13 @@ module.exports = {
     //Delivery Boy
     deliveryboyLogin: (data, callBack) => {
         if (data) {
+            var loginErrMsg = '';
             if (/^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/.test(data.user)) {
                 var loginCond = { email: data.user };
+                loginErrMsg = 'Invalid email or password'
             } else {
                 var loginCond = { phone: data.user };
+                loginErrMsg = 'Invalid phone or password'
             }
 
             deliveryBoySchema.findOne(loginCond, function (err, result) {
@@ -875,7 +927,7 @@ module.exports = {
                             callBack({
                                 success: false,
                                 STATUSCODE: 422,
-                                message: 'Invalid email or password',
+                                message: loginErrMsg,
                                 response_data: {}
                             });
                         }
@@ -883,7 +935,7 @@ module.exports = {
                         callBack({
                             success: false,
                             STATUSCODE: 422,
-                            message: 'Invalid email or password',
+                            message: loginErrMsg,
                             response_data: {}
                         });
                     }
@@ -903,7 +955,7 @@ module.exports = {
                     });
                 } else {
                     if (customer) {
-                        let forgotPasswordOtp = Math.random().toString().replace('0.', '').substr(0, 4);
+                        let forgotPasswordOtp = Math.random().toString().replace('0.', '').substr(0, 6);
                         customer = customer.toObject();
                         customer.forgotPasswordOtp = forgotPasswordOtp;
                         try {
@@ -1000,7 +1052,7 @@ module.exports = {
                     });
                 } else {
                     if (customer) {
-                        let forgotPasswordOtp = Math.random().toString().replace('0.', '').substr(0, 4);
+                        let forgotPasswordOtp = Math.random().toString().replace('0.', '').substr(0, 6);
                         customer = customer.toObject();
                         customer.forgotPasswordOtp = forgotPasswordOtp;
                         try {
@@ -1266,10 +1318,13 @@ module.exports = {
     vendorownerLogin: (data, callBack) => {
 
         if (data) {
+            var loginErrMsg = '';
             if (/^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/.test(data.user)) {
                 var loginCond = { email: data.user };
+                loginErrMsg = 'Invalid email or password'
             } else {
                 var loginCond = { phone: data.user };
+                loginErrMsg = 'Invalid phone or password'
             }
 
             vendorOwnerSchema.findOne(loginCond, function (err, result) {
@@ -1323,12 +1378,13 @@ module.exports = {
                                             lastName: result.lastName,
                                             vendorId: result.vendorId,
                                             email: result.email,
+                                            countryCode: result.countryCode,
                                             phone: result.phone.toString(),
                                             cityId: result.cityId,
                                             location: result.location,
                                             id: result._id,
                                             loginId: loginId,
-                                            profileImage: '',
+                                            profileImage: `${config.serverhost}:${config.port}/img/vendor/${vendorInfo.logo}`,
                                             userType: data.userType,
                                             loginType: data.loginType
                                         },
@@ -1347,7 +1403,7 @@ module.exports = {
                                     callBack({
                                         success: false,
                                         STATUSCODE: 422,
-                                        message: 'Invalid email or password',
+                                        message: loginErrMsg,
                                         response_data: {}
                                     });
                                 }
@@ -1358,7 +1414,7 @@ module.exports = {
                         callBack({
                             success: false,
                             STATUSCODE: 422,
-                            message: 'Invalid email or password',
+                            message: loginErrMsg,
                             response_data: {}
                         });
                     }
@@ -1378,7 +1434,7 @@ module.exports = {
                     });
                 } else {
                     if (customer) {
-                        let forgotPasswordOtp = Math.random().toString().replace('0.', '').substr(0, 4);
+                        let forgotPasswordOtp = Math.random().toString().replace('0.', '').substr(0, 6);
                         customer = customer.toObject();
                         customer.forgotPasswordOtp = forgotPasswordOtp;
                         try {
@@ -1414,7 +1470,7 @@ module.exports = {
     },
     vendorownerResetPassword: (data, callBack) => {
         if (data) {
-            vendorOwnerSchema.findOne({ email: data.email }, { _id: 1 }, function (err, customer) {
+            vendorOwnerSchema.findOne({ email: data.email }, function (err, customer) {
                 if (err) {
                     callBack({
                         success: false,
@@ -1446,12 +1502,58 @@ module.exports = {
                                             response_data: {}
                                         });
                                     } else {
-                                        callBack({
-                                            success: true,
-                                            STATUSCODE: 200,
-                                            message: 'Password updated successfully',
-                                            response_data: {}
-                                        });
+                                        //ADD DATA IN USER LOGIN DEVICE TABLE
+                                        var userDeviceData = {
+                                            userId: customer._id,
+                                            userType: 'VENDOR',
+                                            appType: data.appType,
+                                            pushMode: data.pushMode,
+                                            deviceToken: data.deviceToken
+                                        }
+                                        new userDeviceLoginSchema(userDeviceData).save(async function (err, success) {
+                                            if (err) {
+                                                console.log(err);
+                                                nextCb(null, {
+                                                    success: false,
+                                                    STATUSCODE: 500,
+                                                    message: 'Internal DB error',
+                                                    response_data: {}
+                                                });
+                                            } else {
+                                                var loginId = success._id;
+
+                                                //Vendor Info
+                                                var vendorInfo = await vendorSchema.findOne({ _id: customer.vendorId });
+                                                console.log(customer);
+                                                const authToken = generateToken(customer);
+                                                let response = {
+                                                    userDetails: {
+                                                        firstName: customer.firstName,
+                                                        lastName: customer.lastName,
+                                                        vendorId: customer.vendorId,
+                                                        email: customer.email,
+                                                        countryCode: customer.countryCode,
+                                                        phone: customer.phone.toString(),
+                                                        cityId: customer.cityId,
+                                                        location: customer.location,
+                                                        id: customer._id,
+                                                        loginId: loginId,
+                                                        profileImage: `${config.serverhost}:${config.port}/img/vendor/${vendorInfo.logo}`,
+                                                        userType: data.userType,
+                                                        loginType: data.loginType
+                                                    },
+                                                    authToken: authToken,
+                                                    restaurantName: vendorInfo.restaurantName
+                                                }
+                                                callBack({
+                                                    success: true,
+                                                    STATUSCODE: 200,
+                                                    message: 'Password updated successfully',
+                                                    response_data: response
+                                                });
+                                            }
+                                        })
+
                                     }
                                 })
                             }
@@ -1480,7 +1582,7 @@ module.exports = {
                     });
                 } else {
                     if (customer) {
-                        let forgotPasswordOtp = Math.random().toString().replace('0.', '').substr(0, 4);
+                        let forgotPasswordOtp = Math.random().toString().replace('0.', '').substr(0, 6);
                         customer = customer.toObject();
                         customer.forgotPasswordOtp = forgotPasswordOtp;
                         try {
@@ -1799,7 +1901,7 @@ module.exports = {
                 } else {
                     if (customer) {
                         // console.log(customer);
-                      //  console.log(data.password);
+                        //  console.log(data.password);
                         bcrypt.hash(data.password, 8, function (err, hash) {
                             if (err) {
                                 callBack({
@@ -1809,8 +1911,8 @@ module.exports = {
                                     response_data: {}
                                 });
                             } else {
-                               // console.log(hash);
-                               // console.log(customer._id);
+                                // console.log(hash);
+                                // console.log(customer._id);
                                 customerSchema.update({ _id: customer._id }, {
                                     $set: {
                                         password: hash
@@ -2101,7 +2203,7 @@ module.exports = {
     forgotEmail: (data, callBack) => {
         if (data) {
 
-            if(data.userType == 'customer') {
+            if (data.userType == 'customer') {
                 customerSchema.findOne({ phone: data.phone, loginType: 'GENERAL' }, function (err, customer) {
                     if (err) {
                         callBack({
@@ -2112,7 +2214,7 @@ module.exports = {
                         });
                     } else {
                         if (customer) {
-                            let forgotPasswordOtp = Math.random().toString().replace('0.', '').substr(0, 4);
+                            let forgotPasswordOtp = Math.random().toString().replace('0.', '').substr(0, 6);
                             customer = customer.toObject();
                             customer.forgotPasswordOtp = forgotPasswordOtp;
                             try {
@@ -2139,8 +2241,8 @@ module.exports = {
                         }
                     }
                 })
-            } else if(data.userType == 'vendorowner') {
-                vendorOwnerSchema.findOne({ phone: data.phone}, function (err, customer) {
+            } else if (data.userType == 'vendorowner') {
+                vendorOwnerSchema.findOne({ phone: data.phone }, function (err, customer) {
                     if (err) {
                         callBack({
                             success: false,
@@ -2150,7 +2252,7 @@ module.exports = {
                         });
                     } else {
                         if (customer) {
-                            let forgotPasswordOtp = Math.random().toString().replace('0.', '').substr(0, 4);
+                            let forgotPasswordOtp = Math.random().toString().replace('0.', '').substr(0, 6);
                             customer = customer.toObject();
                             customer.forgotPasswordOtp = forgotPasswordOtp;
                             try {
@@ -2178,7 +2280,7 @@ module.exports = {
                     }
                 })
             }
-            
+
         }
     },
 }

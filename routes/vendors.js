@@ -46,6 +46,12 @@ vendorApi.post('/registerVendor', vendorValidator.addVendorValidator, function(r
     })
 });
 
+vendorApi.post('/vendorTypes', function(req, res) {
+    restaurantService.vendorTypes(req, function(result) {
+        res.status(200).send(result);
+    })
+});
+
 /** Vendor time registration */
 vendorApi.post('/registerVendorTime', vendorValidator.addVendorTimeValidator, function(req, res) {
     restaurantService.addVendorTime(req, function(result) {
@@ -80,9 +86,52 @@ vendorApi.post('/updateItem',jwtTokenValidator.validateToken, vendorValidator.up
     })
 });
 
+/** Get Item Options  */
+vendorApi.post('/getItemOptions',jwtTokenValidator.validateToken, vendorValidator.getItemOptions, function(req, res) {
+    restaurantService.getItemOptions(req, function(result) {
+        res.status(200).send(result);
+    })
+});
+
+/** Get Item Extra name  */
+vendorApi.post('/getItemExtraName',jwtTokenValidator.validateToken, vendorValidator.getItemOptions, function(req, res) {
+    restaurantService.getItemExtraName(req, function(result) {
+        res.status(200).send(result);
+    })
+});
+
+
+/** Item update */
+vendorApi.post('/updateItemStatus',jwtTokenValidator.validateToken, vendorValidator.updateItemStatus, function(req, res) {
+    restaurantService.updateItemStatus(req, function(result) {
+        res.status(200).send(result);
+    })
+});
+
 /** Item List */
 vendorApi.post('/itemList',jwtTokenValidator.validateToken, vendorValidator.itemList, function(req, res) {
     restaurantService.itemList(req, function(result) {
+        res.status(200).send(result);
+    })
+});
+
+/** Item delete */
+vendorApi.post('/deleteItem',jwtTokenValidator.validateToken, vendorValidator.deleteItem, function(req, res) {
+    restaurantService.deleteItem(req, function(result) {
+        res.status(200).send(result);
+    })
+});
+
+/** Get Vendor Reviews */
+vendorApi.post('/getVendorReviews',jwtTokenValidator.validateToken, vendorValidator.getVendorDetails, function(req, res) {
+    restaurantService.getVendorReviews(req, function(result) {
+        res.status(200).send(result);
+    })
+});
+
+/** Get Vendor Reviews */
+vendorApi.post('/updateVendorReviews',jwtTokenValidator.validateToken, vendorValidator.updateVendorReviews, function(req, res) {
+    restaurantService.updateVendorReviews(req, function(result) {
         res.status(200).send(result);
     })
 });
@@ -151,6 +200,28 @@ vendorApi.post('/licenceUpload',jwtTokenValidator.validateToken,vendorValidator.
         res.status(200).send(result);
     });
 })
+
+/** Get notification */
+vendorApi.post('/getNotificationData',jwtTokenValidator.validateToken, vendorValidator.getNotificationData, function(req, res) {
+    restaurantService.getNotificationData(req, function(result) {
+        res.status(200).send(result);
+    })
+});
+
+/** Update notification */
+vendorApi.post('/updateNotificationData',jwtTokenValidator.validateToken, vendorValidator.updateNotificationData, function(req, res) {
+    restaurantService.updateNotificationData(req, function(result) {
+        res.status(200).send(result);
+    })
+});
+
+/** Notification list */
+vendorApi.post('/notificationList',jwtTokenValidator.validateToken, vendorValidator.notificationList, function(req, res) {
+    restaurantService.notificationList(req, function(result) {
+        res.status(200).send(result);
+    })
+});
+
 
 
 

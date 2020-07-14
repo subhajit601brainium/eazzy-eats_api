@@ -7,7 +7,7 @@ module.exports = {
         console.log(req.body);
         const rules = joi.object({
             restaurantName: joi.string().required().error(new Error('Restaurant name is required')),
-            managerName: joi.string().required().error(new Error('Manager name is required')),
+            managerName: joi.string().allow('').optional(),
             description: joi.string().allow('').optional(),
             restaurantType: joi.string().required().error(new Error('Restaurant type is required')),
             
@@ -110,7 +110,7 @@ module.exports = {
     },
     itemAddValidator: async (req, res, next) => {
         var itemType = ['NON VEG', 'VEG'];
-        var discountType = ['FLAT', 'PERCENTAGE'];
+        var discountType = ['FLAT', 'PERCENTAGE','NONE'];
         const rules = joi.object({
             customerId: joi.string().required().error(new Error('Customer id is required')),
             vendorId: joi.string().required().error(new Error('Vendor id is required')),
@@ -124,7 +124,11 @@ module.exports = {
             itemExtra: joi.string().allow('').optional(),
             itemOption: joi.string().allow('').optional(),
             discountType: joi.string().valid(...discountType).error(new Error('Discount type is required')),
-            discountAmount: joi.string().required().error(new Error('Discount amount is required')),
+            discountAmount: joi.string().allow(''),
+            // validityFrom: joi.string().regex(/^(0?[1-9]|[12][0-9]|3[01])[\/\-](0?[1-9]|1[012])[\/\-]\d{4}$/).error(new Error('Validity from is required')),
+            // validityTo: joi.string().regex(/^(0?[1-9]|[12][0-9]|3[01])[\/\-](0?[1-9]|1[012])[\/\-]\d{4}$/).error(new Error('Validity to is required'))
+            validityFrom: joi.string().allow(''),
+            validityTo: joi.string().allow('')
         });
 
         const value = await rules.validate(req.body);
@@ -158,7 +162,7 @@ module.exports = {
     },
     updateItem: async (req, res, next) => {
         var itemType = ['NON VEG', 'VEG'];
-        var discountType = ['FLAT', 'PERCENTAGE'];
+        var discountType = ['FLAT', 'PERCENTAGE','NONE'];
         const rules = joi.object({
             customerId: joi.string().required().error(new Error('Customer id is required')),
             vendorId: joi.string().required().error(new Error('Vendor id is required')),
@@ -173,7 +177,47 @@ module.exports = {
             itemExtra: joi.string().allow('').optional(),
             itemOption: joi.string().allow('').optional(),
             discountType: joi.string().valid(...discountType).error(new Error('Discount type is required')),
-            discountAmount: joi.string().required().error(new Error('Discount amount is required'))
+            discountAmount: joi.string().allow(''),
+            validityFrom: joi.string().allow(''),
+            validityTo: joi.string().allow('')
+            // validityFrom: joi.string().regex(/^(0?[1-9]|[12][0-9]|3[01])[\/\-](0?[1-9]|1[012])[\/\-]\d{4}$/).error(new Error('Validity from is required')),
+            // validityTo: joi.string().regex(/^(0?[1-9]|[12][0-9]|3[01])[\/\-](0?[1-9]|1[012])[\/\-]\d{4}$/).error(new Error('Validity to is required'))
+        });
+
+        const value = await rules.validate(req.body);
+        if (value.error) {
+            res.status(422).json({
+                success: false,
+                STATUSCODE: 422,
+                message: value.error.message
+            })
+        } else {
+            next();
+        }
+    },
+    getItemOptions: async (req, res, next) => {
+        const rules = joi.object({
+            customerId: joi.string().required().error(new Error('Customer id is required')),
+            vendorId: joi.string().required().error(new Error('Vendor id is required'))
+        });
+
+        const value = await rules.validate(req.body);
+        if (value.error) {
+            res.status(422).json({
+                success: false,
+                STATUSCODE: 422,
+                message: value.error.message
+            })
+        } else {
+            next();
+        }
+    },
+    updateItemStatus: async (req, res, next) => {
+        const rules = joi.object({
+            customerId: joi.string().required().error(new Error('Customer id is required')),
+            vendorId: joi.string().required().error(new Error('Vendor id is required')),
+            itemId: joi.string().required().error(new Error('Item id is required')),
+            isActive: joi.boolean().required().error(new Error('Active status is required')),
         });
 
         const value = await rules.validate(req.body);
@@ -190,7 +234,26 @@ module.exports = {
     itemList: async (req, res, next) => {
         const rules = joi.object({
             customerId: joi.string().required().error(new Error('Customer id is required')),
-            vendorId: joi.string().required().error(new Error('Vendor id is required'))
+            vendorId: joi.string().required().error(new Error('Vendor id is required')),
+            categoryId: joi.string().allow(''),
+        });
+
+        const value = await rules.validate(req.body);
+        if (value.error) {
+            res.status(422).json({
+                success: false,
+                STATUSCODE: 422,
+                message: value.error.message
+            })
+        } else {
+            next();
+        }
+    },
+    deleteItem: async (req, res, next) => {
+        const rules = joi.object({
+            customerId: joi.string().required().error(new Error('Customer id is required')),
+            vendorId: joi.string().required().error(new Error('Vendor id is required')),
+            itemId: joi.string().required().error(new Error('Item id is required'))
         });
 
         const value = await rules.validate(req.body);
@@ -237,13 +300,34 @@ module.exports = {
             next();
         }
     },
+    updateVendorReviews: async (req, res, next) => {
+        const rules = joi.object({
+            customerId: joi.string().required().error(new Error('Customer id is required')),
+            vendorId: joi.string().required().error(new Error('Vendor id is required')),
+            reviewId: joi.string().required().error(new Error('Review id is required')),
+            reply: joi.string().required().error(new Error('Reply is required'))
+        });
+
+        const value = await rules.validate(req.body);
+        if (value.error) {
+            res.status(422).json({
+                success: false,
+                STATUSCODE: 422,
+                message: value.error.message
+            })
+        } else {
+            next();
+        }
+    },
     updateVendorDetails: async (req, res, next) => {
+        var preOrderStatus = ['ON', 'OFF'];
         const rules = joi.object({
             customerId: joi.string().required().error(new Error('Customer id is required')),
             vendorId: joi.string().required().error(new Error('Vendor id is required')),
             restaurantName: joi.string().required().error(new Error('Restaurant name is required')),
-            managerName: joi.string().required().error(new Error('Manager name is required')),
-            restaurantType: joi.string().required().error(new Error('Restaurant type is required'))
+            managerName: joi.string().allow('').optional(),
+            restaurantType: joi.string().required().error(new Error('Restaurant type is required')),
+            preOrder: joi.string().allow('').optional()
         });
 
         
@@ -259,6 +343,7 @@ module.exports = {
         } 
     },
     updateVendorTime: async (req, res, next) => {
+        var preOrderStatus = ['ON', 'OFF'];
         const rules = joi.object({
             vendorId: joi.string().required().error(new Error('Vendor id is required')),
             customerId: joi.string().required().error(new Error('Customer id is required')),
@@ -266,6 +351,8 @@ module.exports = {
             location: joi.string().allow('').optional(),
             latitude: joi.string().required().error(new Error('User latitude required')),
             longitude: joi.string().required().error(new Error('User longitude required')),
+            preOrder: joi.string().allow('').optional(),
+            restaurantClose : joi.boolean().required().error(new Error('Restaurant close is required')),
         });
 
        // console.log(req.body);
@@ -366,5 +453,57 @@ module.exports = {
         } else {
             next();
         }
-    }
+    },
+    getNotificationData: async (req, res, next) => {
+        const rules = joi.object({
+            customerId: joi.string().required().error(new Error('Customer id is required')),
+            vendorId: joi.string().required().error(new Error('Vendor id is required'))
+        });
+
+        const value = await rules.validate(req.body);
+        if (value.error) {
+            res.status(422).json({
+                success: false,
+                STATUSCODE: 422,
+                message: value.error.message
+            })
+        } else {
+            next();
+        }
+    },
+    updateNotificationData: async (req, res, next) => {
+        const rules = joi.object({
+            customerId: joi.string().required().error(new Error('Customer id is required')),
+            vendorId: joi.string().required().error(new Error('Vendor id is required')),
+            notificationData: joi.any().allow('')
+        });
+
+        const value = await rules.validate(req.body);
+        if (value.error) {
+            res.status(422).json({
+                success: false,
+                STATUSCODE: 422,
+                message: value.error.message
+            })
+        } else {
+            next();
+        }
+    },
+    notificationList: async (req, res, next) => {
+        const rules = joi.object({
+            customerId: joi.string().required().error(new Error('Customer id is required')),
+            vendorId: joi.string().required().error(new Error('Vendor id is required'))
+        });
+
+        const value = await rules.validate(req.body);
+        if (value.error) {
+            res.status(422).json({
+                success: false,
+                STATUSCODE: 422,
+                message: value.error.message
+            })
+        } else {
+            next();
+        }
+    },
 }
