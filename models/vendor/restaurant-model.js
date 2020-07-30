@@ -1,5 +1,6 @@
 var vendorSchema = require('../../schema/Vendor');
-var vendorTypesSchema = require('../../schema/VendorType');
+var vendorCategoriesSchema = require('../../schema/VendorCategory');
+var mappingVendorCategoriesSchema = require('../../schema/MappingVendorCategory');
 var vendorOwnerSchema = require('../../schema/VendorOwner');
 var bannerSchema = require('../../schema/Banner');
 var categorySchema = require('../../schema/Category');
@@ -80,6 +81,7 @@ module.exports = {
                             }
 
 
+
                             var vendorUpData = {
                                 restaurantName: reqBody.restaurantName,
                                 managerName: reqBody.managerName,
@@ -149,12 +151,43 @@ module.exports = {
                                                         response_data: {}
                                                     });
                                                 } else {
-                                                    callBack({
-                                                        success: true,
-                                                        STATUSCODE: 200,
-                                                        message: 'Vendor related information added successfully',
-                                                        response_data: result
+                                                    //Map Categories
+                                                    var vendorCategories = reqBody.restaurantType;
+                                                    var vendorCategoriesArr = vendorCategories.split(",");
+                                                    var mapVendorCatArr = [];
+                                                    if (vendorCategoriesArr.length > 0) {
+                                                        for (let vendorCategory of vendorCategoriesArr) {
+                                                            var mapVendorCatObj = {};
+                                                            var vendorCatCheck = await vendorCategoriesSchema.findOne({ categoryName: vendorCategory });
+
+                                                            if (vendorCatCheck != null) {
+                                                                mapVendorCatObj.vendorId = vendorId
+                                                                mapVendorCatObj.vendorCategoryId = vendorCatCheck._id;
+                                                            }
+
+                                                            mapVendorCatArr.push(mapVendorCatObj);
+                                                        }
+                                                    }
+
+                                                    mappingVendorCategoriesSchema.insertMany(mapVendorCatArr, function (err, mapresult) {
+                                                        if (err) {
+                                                            console.log(err);
+                                                            callBack({
+                                                                success: false,
+                                                                STATUSCODE: 500,
+                                                                message: 'Internal DB error',
+                                                                response_data: {}
+                                                            });
+                                                        } else {
+                                                            callBack({
+                                                                success: true,
+                                                                STATUSCODE: 200,
+                                                                message: 'Restaurant related information added successfully',
+                                                                response_data: result
+                                                            });
+                                                        }
                                                     });
+                                                    
                                                 }
                                             });
                                         }
@@ -200,7 +233,7 @@ module.exports = {
             //         callBack({
             //             success: true,
             //             STATUSCODE: 200,
-            //             message: 'Vendor time data added succsessfully.',
+            //             message: 'Restaurant time data added succsessfully.',
             //             response_data: {}
             //         });
             //     }
@@ -264,14 +297,31 @@ module.exports = {
             //     }
             // });
 
-            vendorTypesSchema
+            vendorCategoriesSchema
                 .find({ isActive: true })
-                .then((vendorTypes) => {
+                .then(async (vendorTypes) => {
+                    var vendorTypesArr = [];
+
+                    if (vendorTypes.length > 0) {
+                        for (let vendorType of vendorTypes) {
+
+                            var vendorTypesObj = {
+                                _id: vendorType._id,
+                                __v: vendorType.__v,
+                                createdAt: vendorType.createdAt,
+                                updatedAt: vendorType.updatedAt
+                            };
+                            vendorTypesObj.name = vendorType.categoryName;
+                            vendorTypesObj.isActive = vendorType.isActive;
+
+                            vendorTypesArr.push(vendorTypesObj);
+                        }
+                    }
                     callBack({
                         success: true,
                         STATUSCODE: 200,
-                        message: 'All vendor  types',
-                        response_data: { vendorTypes: vendorTypes }
+                        message: 'All restaurant  types',
+                        response_data: { vendorTypes: vendorTypesArr }
                     });
                 })
                 .catch((err) => {
@@ -454,7 +504,7 @@ module.exports = {
                                             callBack({
                                                 success: true,
                                                 STATUSCODE: 200,
-                                                message: 'Vendor time data added succsessfully.',
+                                                message: 'Restaurant time data added succsessfully.',
                                                 response_data: {}
                                             });
                                         }
@@ -555,7 +605,7 @@ module.exports = {
                                         callBack({
                                             success: true,
                                             STATUSCODE: 200,
-                                            message: 'Vendor Owner added Successfull',
+                                            message: 'Restaurant Owner added Successfull',
                                             response_data: result
                                         })
                                     }
@@ -1696,7 +1746,7 @@ module.exports = {
                             callBack({
                                 success: true,
                                 STATUSCODE: 200,
-                                message: 'Vendor review updated succsessfully.',
+                                message: 'Restaurant review updated succsessfully.',
                                 response_data: {}
                             });
                         }
@@ -1738,7 +1788,7 @@ module.exports = {
 
             vendorSchema.update({ _id: reqBody.vendorId }, {
                 $set: updateVendor
-            }, function (err, res) {
+            }, async function (err, res) {
                 if (err) {
                     callBack({
                         success: false,
@@ -1747,12 +1797,46 @@ module.exports = {
                         response_data: {}
                     });
                 } else {
-                    callBack({
-                        success: true,
-                        STATUSCODE: 200,
-                        message: 'Vendor data updated succsessfully.',
-                        response_data: {}
+                    //Map Categories
+                    var vendorCategories = reqBody.restaurantType;
+                    var vendorCategoriesArr = vendorCategories.split(",");
+                    var mapVendorCatArr = [];
+                    if (vendorCategoriesArr.length > 0) {
+                        for (let vendorCategory of vendorCategoriesArr) {
+                            var mapVendorCatObj = {};
+                            var vendorCatCheck = await vendorCategoriesSchema.findOne({ categoryName: vendorCategory });
+
+                            if (vendorCatCheck != null) {
+                                mapVendorCatObj.vendorId = reqBody.vendorId
+                                mapVendorCatObj.vendorCategoryId = vendorCatCheck._id;
+                            }
+
+                            mapVendorCatArr.push(mapVendorCatObj);
+                        }
+                    }
+
+                    await mappingVendorCategoriesSchema.deleteMany({ vendorId: reqBody.vendorId });
+
+                    mappingVendorCategoriesSchema.insertMany(mapVendorCatArr, function (err, mapresult) {
+                        if (err) {
+                            console.log(err);
+                            callBack({
+                                success: false,
+                                STATUSCODE: 500,
+                                message: 'Internal DB error',
+                                response_data: {}
+                            });
+                        } else {
+
+                            callBack({
+                                success: true,
+                                STATUSCODE: 200,
+                                message: 'Restaurant data updated succsessfully.',
+                                response_data: {}
+                            });
+                        }
                     });
+                    
                 }
             });
 
@@ -1812,7 +1896,7 @@ module.exports = {
                             callBack({
                                 success: true,
                                 STATUSCODE: 200,
-                                message: 'Vendor time data added succsessfully.',
+                                message: 'Restaurant time data added succsessfully.',
                                 response_data: {}
                             });
                         }
@@ -1963,7 +2047,7 @@ module.exports = {
                                                 callBack({
                                                     success: true,
                                                     STATUSCODE: 200,
-                                                    message: 'Vendor time data added succsessfully.',
+                                                    message: 'Restaurant time data added succsessfully.',
                                                     response_data: {}
                                                 });
                                             }
@@ -2102,7 +2186,7 @@ module.exports = {
                                         callBack({
                                             success: true,
                                             STATUSCODE: 200,
-                                            message: 'Vendor email updated succsessfully.',
+                                            message: 'Restaurant email updated succsessfully.',
                                             response_data: {}
                                         });
                                     }
@@ -2180,7 +2264,7 @@ module.exports = {
                                         callBack({
                                             success: true,
                                             STATUSCODE: 200,
-                                            message: 'Vendor phone updated succsessfully.',
+                                            message: 'Restaurant phone updated succsessfully.',
                                             response_data: {}
                                         });
                                     }
@@ -2297,7 +2381,7 @@ module.exports = {
                                 callBack({
                                     success: true,
                                     STATUSCODE: 200,
-                                    message: 'Logo uploaded successfully.',
+                                    message: 'Restaurant logo uploaded successfully.',
                                     response_data: {}
                                 });
 
@@ -2565,13 +2649,13 @@ module.exports = {
                             .find({ userId: reqBody.vendorId })
                             .then(async (usernotifications) => {
 
-                                
+
 
                                 callBack({
                                     success: true,
                                     STATUSCODE: 200,
                                     message: 'userNotificatons',
-                                    response_data: {notifications: usernotifications}
+                                    response_data: { notifications: usernotifications }
                                 });
                             })
                             .catch((err) => {

@@ -3,7 +3,6 @@ var joi = require('@hapi/joi');
 module.exports = {
     
     orderListValidator: async (req, res, next) => {
-        console.log(req);
         const rules = joi.object({
             customerId: joi.string().required().error(new Error('customer Id is required')),
             vendorId: joi.string().required().error(new Error('vendor Id is required')),

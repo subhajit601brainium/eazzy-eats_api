@@ -6,7 +6,9 @@ var orderDetailSchema = new mongoose.Schema({
     item: { type: String, required: true},
     quantity: { type: Number, required: true },
     itemPrice: {type: Number, required: true},
-    totalPrice: {type: Number, required: true}
+    totalPrice: {type: Number, required: true},
+    itemOptions: { type: Object, allow: '', default: []},
+    itemExtras: { type: Object, allow: '', default: []},
 }, {
     timestamps: true
 });

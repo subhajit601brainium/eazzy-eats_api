@@ -61,5 +61,25 @@ module.exports = {
                 callBack(result);
             }
         });
+    },
+    applyPromoCode: (data, callBack) => {
+        async.waterfall([
+            function(nextCb) {
+                orderModel.applyPromoCode(data, function(result) {
+                    nextCb(null, result);
+                })
+            }
+        ], function(err, result) {
+            if (err) {
+                callBack({
+                    success: false,
+                    STATUSCODE: 403,
+                    message: 'Request Forbidden',
+                    response_data: {}
+                })
+            } else {
+                callBack(result);
+            }
+        });
     }
 }

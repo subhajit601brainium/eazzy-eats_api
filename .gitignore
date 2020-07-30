@@ -6,3 +6,5 @@ public/img/vendor/*
 !public/img/vendor/empty
 public/img/category/*
 !public/img/category/empty
+public/img/vendor_category/*
+!public/img/vendor_category/empty

@@ -8,7 +8,7 @@ module.exports = {
             userType: joi.string().valid(...userType).error(new Error('Please send userType')),
             latitude: joi.string().required().error(new Error('Latitude required')),
             longitude: joi.string().required().error(new Error('Longitude required')),
-            categoryId: joi.string().allow('').optional()
+            categoryId: joi.string().required().error(new Error('Category Id is required')),
         });
 
         const value = await rules.validate(req.body);
@@ -37,7 +37,7 @@ module.exports = {
         var userType = ['CUSTOMER','GUEST']
         const rules = joi.object({
             customerId: joi.string().allow('').optional(),
-            categoryId: joi.string().allow('').optional(),
+            categoryId: joi.string().required().error(new Error('Category Id is required')),
             vendorId: joi.string().required().error(new Error('vendor Id is required')),
             restaurantInfo: joi.string().required().error(new Error('Need Restaurant info')),
             userType: joi.string().valid(...userType).error(new Error('Please send userType')),
@@ -74,15 +74,17 @@ module.exports = {
             customerId: joi.string().allow('').optional(),
             appType: joi.string().required().valid(...appTypeVal).error(new Error('App type required')),
             vendorId: joi.string().required().error(new Error('vendor Id is required')),
-            deliveryPincode: joi.string().required().error(new Error('Delivery Pincode is required')),
-            deliveryHouseNo: joi.string().required().error(new Error('House no or building name is required')),
-            deliveryRoad: joi.string().required().error(new Error('Road name, area, colony is required')),
+            // deliveryPincode: joi.string().required().error(new Error('Delivery Pincode is required')),
+            deliveryHouseNo: joi.string().allow('').optional(),
+           // deliveryRoad: joi.string().required().error(new Error('Road name, area, colony is required')),
             deliveryCountryCode: joi.string().required().error(new Error('Country code is required')),
             deliveryPhone: joi.string().required().error(new Error('Delivery phone no required')),
-            deliveryState: joi.string().required().error(new Error('Delivery state is required')),
-            deliveryCity: joi.string().required().error(new Error('Delivery city is required')),
+           // deliveryState: joi.string().required().error(new Error('Delivery state is required')),
+           // deliveryCity: joi.string().required().error(new Error('Delivery city is required')),
             deliveryLandmark: joi.string().allow('').optional(),
-            deliveryName: joi.string().required().error(new Error('Delivery name required')),
+           // deliveryName: joi.string().required().error(new Error('Delivery name required')),
+           fullAddress: joi.string().required().error(new Error('Full address is required')),
+           addressType: joi.string().allow('').optional(),
             userType: joi.string().valid(...userType).error(new Error('Please send userType')),
             deliveryPreference : joi.string().valid(...deliveryPreferenc).required().error(new Error('Please send deliveryPreference')),
             orderType: joi.string().required().error(new Error('Please send orderType')),
@@ -94,7 +96,9 @@ module.exports = {
             offerId: joi.string().allow('').optional(),
             items: joi.any().required().error(new Error('Item information required')),
             latitude: joi.string().required().error(new Error('Latitude required')),
-            longitude: joi.string().required().error(new Error('Longitude required'))
+            longitude: joi.string().required().error(new Error('Longitude required')),
+            itemOptions: joi.string().allow('').optional(),
+            orderExtras: joi.string().allow('').optional(),
         });
 
         const value = await rules.validate(req.body);
@@ -237,6 +241,36 @@ module.exports = {
             
         }
     },
+    applyPromoCode: async (req, res, next) => {
+        var userType = ['CUSTOMER','GUEST']
+        const rules = joi.object({
+            customerId: joi.string().allow('').optional(),
+            userType: joi.string().valid(...userType).error(new Error('Please send userType')),
+            amount: joi.string().required().error(new Error('Amount required')),
+            promoCode: joi.string().required().error(new Error('Promo code required')),
+        });
+
+        const value = await rules.validate(req.body);
+        if (value.error) {
+            res.status(422).json({
+                success: false,
+                STATUSCODE: 422,
+                message: value.error.message
+            })
+        } else {
+            var customerId = req.body.customerId;
+            if((userType == 'CUSTOMER') && (customerId == '')) {
+                res.status(422).json({
+                    success: false,
+                    STATUSCODE: 422,
+                    message: 'Customer Id is required'
+                })
+            } else {
+                next();
+            }
+            
+        }
+    },
     customerSearchValidator: async (req, res, next) => {
         var userType = ['CUSTOMER','GUEST']
         const rules = joi.object({
@@ -307,6 +341,63 @@ module.exports = {
             })
         } else {
             next();
+        }
+    },
+    protectGuestUser: async (req, res, next) => {
+        var userType = ['GUEST'];
+        var appType = ['Android'];
+        const rules = joi.object({
+            appType: joi.string().valid(...appType).error(new Error('Only android is allowed')),
+            userType: joi.string().valid(...userType).error(new Error('Only guest is allowed')),
+        });
+
+        const value = await rules.validate(req.body);
+        if (value.error) {
+            res.status(422).json({
+                success: false,
+                STATUSCODE: 422,
+                message: value.error.message
+            })
+        } else {
+            var customerId = req.body.customerId;
+            if((userType == 'CUSTOMER') && (customerId == '')) {
+                res.status(422).json({
+                    success: false,
+                    STATUSCODE: 422,
+                    message: 'Customer Id is required'
+                })
+            } else {
+                next();
+            }
+        }
+    },
+    physicalAddressByLatlong: async (req, res, next) => {
+        var userType = ['CUSTOMER','GUEST']
+        const rules = joi.object({
+            customerId: joi.string().allow('').optional(),
+            userType: joi.string().valid(...userType).error(new Error('Guest user is not allowed')),
+            latitude: joi.string().required().error(new Error('Latitude required')),
+            longitude: joi.string().required().error(new Error('Longitude required'))
+        });
+
+        const value = await rules.validate(req.body);
+        if (value.error) {
+            res.status(422).json({
+                success: false,
+                STATUSCODE: 422,
+                message: value.error.message
+            })
+        } else {
+            var customerId = req.body.customerId;
+            if((userType == 'CUSTOMER') && (customerId == '')) {
+                res.status(422).json({
+                    success: false,
+                    STATUSCODE: 422,
+                    message: 'Customer Id is required'
+                })
+            } else {
+                next();
+            }
         }
     },
     addAddress: async (req, res, next) => {
@@ -437,6 +528,55 @@ module.exports = {
                 next();
             }
             
+        }
+    },
+    getNotificationData: async (req, res, next) => {
+        const rules = joi.object({
+            customerId: joi.string().required().error(new Error('Customer id is required'))
+        });
+
+        const value = await rules.validate(req.body);
+        if (value.error) {
+            res.status(422).json({
+                success: false,
+                STATUSCODE: 422,
+                message: value.error.message
+            })
+        } else {
+            next();
+        }
+    },
+    updateNotificationData: async (req, res, next) => {
+        const rules = joi.object({
+            customerId: joi.string().required().error(new Error('Customer id is required')),
+            notificationData: joi.any().allow('')
+        });
+
+        const value = await rules.validate(req.body);
+        if (value.error) {
+            res.status(422).json({
+                success: false,
+                STATUSCODE: 422,
+                message: value.error.message
+            })
+        } else {
+            next();
+        }
+    },
+    notificationList: async (req, res, next) => {
+        const rules = joi.object({
+            customerId: joi.string().required().error(new Error('Customer id is required'))
+        });
+
+        const value = await rules.validate(req.body);
+        if (value.error) {
+            res.status(422).json({
+                success: false,
+                STATUSCODE: 422,
+                message: value.error.message
+            })
+        } else {
+            next();
         }
     },
 }

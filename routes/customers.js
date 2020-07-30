@@ -3,9 +3,11 @@ var express = require('express');
 const config = require('../config');
 const registerService = require('../services/customer/register-service');
 const restaurantService = require('../services/customer/restaurant-service');
+const paymentService = require('../services/customer/payment-service');
 const orderService = require('../services/customer/order-service');
 const customerValidator = require('../middlewares/validators/customer/customer-validator');
 const restaurantValidator = require('../middlewares/validators/customer/restaurant-validator');
+const paymentValidator = require('../middlewares/validators/customer/payment-validator');
 
 const jwtTokenValidator = require('../middlewares/jwt-validation-middlewares');
 
@@ -20,9 +22,17 @@ customerApi.post('/register', customerValidator.customerRegister, function(req, 
     })
 });
 
+
 /** Customer Login */
 customerApi.post('/login', customerValidator.customerLogin, function(req, res) {
     registerService.customerLogin(req.body, function(result) {
+        res.status(200).send(result);
+    })
+});
+
+/** Customer Verify OTP */
+customerApi.post('/customerVerifyUser', customerValidator.customerVerifyUser, function(req, res) {
+    registerService.customerVerifyUser(req, function(result) {
         res.status(200).send(result);
     })
 });
@@ -110,7 +120,29 @@ customerApi.post('/devicePush',jwtTokenValidator.validateToken, customerValidato
     registerService.devicePush(req.body, function(result) {
         res.status(200).send(result);
     });
-})
+});
+
+
+/** Verify Infor Before Changing Email/Phone */
+customerApi.post('/verifyUser',jwtTokenValidator.validateToken, customerValidator.verifyUser, function(req, res) {
+    registerService.verifyUser(req, function(result) {
+        res.status(200).send(result);
+    })
+});
+
+/** Update Vendor Email */
+customerApi.post('/updateUserEmail',jwtTokenValidator.validateToken, customerValidator.updateUserEmail, function(req, res) {
+    registerService.updateUserEmail(req, function(result) {
+        res.status(200).send(result);
+    })
+});
+
+/** Update Vendor Phone */
+customerApi.post('/updateUserPhone',jwtTokenValidator.validateToken, customerValidator.updateUserPhone, function(req, res) {
+    registerService.updateUserPhone(req, function(result) {
+        res.status(200).send(result);
+    })
+});
 
 /** Home/Dashboard */
 customerApi.post('/dashboard',jwtTokenValidator.validateToken,restaurantValidator.customerHomeValidator, function(req, res) {
@@ -198,6 +230,13 @@ customerApi.post('/promoCodeList',jwtTokenValidator.validateToken,restaurantVali
     });
 });
 
+/** All promo List */
+customerApi.post('/applyPromoCode',jwtTokenValidator.validateToken,restaurantValidator.applyPromoCode, function(req, res) {
+    orderService.applyPromoCode(req, function(result) {
+        res.status(200).send(result);
+    });
+});
+
 /** Forgot Password */
 customerApi.post('/forgotEmail', customerValidator.forgotEmail, function(req, res) {
     registerService.forgotEmail(req.body, function(result) {
@@ -216,6 +255,48 @@ customerApi.post('/favouriteChange',jwtTokenValidator.validateToken,restaurantVa
 /** Favourite/unfavorite */
 customerApi.post('/favouriteList',jwtTokenValidator.validateToken,restaurantValidator.favouriteList, function(req, res) {
     restaurantService.favouriteList(req, function(result) {
+        res.status(200).send(result);
+    });
+});
+
+/** physicalAddressByLatlong  */
+customerApi.post('/protectGuestUser',restaurantValidator.protectGuestUser, function(req, res) {
+    restaurantService.protectGuestUser(req, function(result) {
+        res.status(200).send(result);
+    });
+});
+
+/** physicalAddressByLatlong  */
+customerApi.post('/physicalAddressByLatlong',jwtTokenValidator.validateToken,restaurantValidator.physicalAddressByLatlong, function(req, res) {
+    restaurantService.physicalAddressByLatlong(req, function(result) {
+        res.status(200).send(result);
+    });
+});
+
+/** Get notification */
+customerApi.post('/getNotificationData',jwtTokenValidator.validateToken, restaurantValidator.getNotificationData, function(req, res) {
+    restaurantService.getNotificationData(req, function(result) {
+        res.status(200).send(result);
+    })
+});
+
+/** Update notification */
+customerApi.post('/updateNotificationData',jwtTokenValidator.validateToken, restaurantValidator.updateNotificationData, function(req, res) {
+    restaurantService.updateNotificationData(req, function(result) {
+        res.status(200).send(result);
+    })
+});
+
+/** Notification list */
+customerApi.post('/notificationList',jwtTokenValidator.validateToken, restaurantValidator.notificationList, function(req, res) {
+    restaurantService.notificationList(req, function(result) {
+        res.status(200).send(result);
+    })
+});
+
+/** Payment initialize  */
+customerApi.post('/paymentInitialize',jwtTokenValidator.validateToken,paymentValidator.paymentInitialize, function(req, res) {
+    paymentService.paymentInitialize(req, function(result) {
         res.status(200).send(result);
     });
 });

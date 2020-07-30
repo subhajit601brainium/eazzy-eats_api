@@ -7,6 +7,9 @@ var promoCodeSchema = new mongoose.Schema({
     promoPrice: { type: Number, required: true },
     promoConditions: { type: String},
     promoCode: { type: String, required: true},
+    promoCodeDesciption: { type: String},
+    promoCodeAmountMinCap: { type: String},
+    promoCodeAmountMaxCap: { type: String},
 }, {
     timestamps: true
 });

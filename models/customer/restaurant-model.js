@@ -1,9 +1,12 @@
 var vendorSchema = require('../../schema/Vendor');
 var vendorFavouriteSchema = require('../../schema/VendorFavourite');
+var vendorCategorySchema = require('../../schema/VendorCategory');
+var mappingVendorCategorySchema = require('../../schema/MappingVendorCategory');
 var categorySchema = require('../../schema/Category');
 var bannerSchema = require('../../schema/Banner');
 var itemSchema = require('../../schema/Item');
 var userDeviceLoginSchemaSchema = require('../../schema/UserDeviceLogin');
+var customerSchema = require('../../schema/Customer');
 var vendorOwnerSchema = require('../../schema/VendorOwner');
 var vendorReviewSchema = require('../../schema/VendorReview');
 
@@ -14,6 +17,8 @@ var PushLib = require('../../libraries/pushlib/send-push');
 var UserNotificationSchema = require('../../schema/UserNotification');
 var customerAddressSchema = require('../../schema/CustomerAddress');
 var ItemExtraSchema = require('../../schema/ItemExtra');
+var userNotificationSettingSchema = require('../../schema/UserNotificationSetting');
+var jwt = require('jsonwebtoken');
 
 module.exports = {
     //Customer Home/Dashboard API
@@ -42,22 +47,24 @@ module.exports = {
             }
 
             var vendorIdArr = [];
-            if ((categoryId != '') && (categoryId != undefined)) {
-                var itemArr = await itemSchema.find({ categoryId: categoryId });
-                console.log(' yaa');
-                if (itemArr.length > 0) {
-
-                    for (let item of itemArr) {
-                        var vendorId = item.vendorId.toString();
+            var catCheck = 0;
+            if (categoryId != '1') {
+                catCheck = 1;
+                var mapvendorCatArr = await mappingVendorCategorySchema.find({ vendorCategoryId: categoryId });
+                if (mapvendorCatArr.length > 0) {
+                    for (let mapvendorVal of mapvendorCatArr) {
+                        var vendorId = mapvendorVal.vendorId.toString();
                         vendorIdArr.push(vendorId);
                     }
-
                 }
             }
 
-            if (vendorIdArr.length > 0) {
+            if (catCheck == 1) {
                 vendorQry._id = { $in: vendorIdArr }
             }
+
+            console.log(vendorQry);
+            
 
 
             vendorSchema.find(vendorQry)
@@ -95,6 +102,8 @@ module.exports = {
                                 responseObj.distance = await getDistanceinMtr(sourceLat, sourceLong, destLat, destLong);
                                 // console.log(responseObj);
 
+                                responseObj.latitude = sourceLat;
+                                responseObj.longitude = sourceLong;
                                 //Get Favorites (Only for Genuine Customers, No Guest)
                                 if (userType == 'GUEST') {
                                     responseObj.favorite = 0;
@@ -103,6 +112,60 @@ module.exports = {
                                     var vendorId = restaurant._id;
                                     responseObj.favorite = await vendorFavouriteSchema.countDocuments({ vendorId: vendorId, customerId: customerId });
                                 }
+
+                                //Offer 
+                                var itemsChecks = await itemSchema.find({ vendorId: restaurant._id });
+                                if (itemsChecks.length > 0) {
+                                    var finalPriceArr = [];
+                                    var finalPriceValueArr = [];
+                                    var minPrice = -5;
+                                    var offerWord = '';
+                                    for (itemsCheck of itemsChecks) {
+                                        var itemPrice = itemsCheck.price;
+                                        var discountAmount = itemsCheck.discountAmount;
+                                        if (itemsCheck.discountType == 'PERCENTAGE') {
+                                            var finalPrce = (Number(itemPrice) - ((Number(itemPrice) * Number(discountAmount)) / 100));
+                                        } else if (itemsCheck.discountType == 'FLAT') {
+                                            var finalPrce = (Number(itemPrice) - Number(discountAmount));
+                                        } else {
+                                            var finalPrce = Number(itemPrice);
+                                        }
+
+                                        if (minPrice == -5) {
+
+                                            minPrice = finalPrce;
+
+                                            if (itemsCheck.discountType == 'PERCENTAGE') {
+                                                offerWord = `Upto ${discountAmount}% off`;
+                                            } else if (itemsCheck.discountType == 'FLAT') {
+                                                offerWord = `Upto flat ₦${discountAmount} off`;
+                                            } else {
+                                                offerWord = '';
+                                            }
+                                        } else {
+                                            if (finalPrce < minPrice) {
+                                                minPrice = finalPrce;
+
+                                                if (itemsCheck.discountType == 'PERCENTAGE') {
+                                                    offerWord = `Upto ${discountAmount}% off`;
+                                                } else if (itemsCheck.discountType == 'FLAT') {
+                                                    offerWord = `Upto flat ₦${discountAmount} off`;
+                                                } else {
+                                                    offerWord = '';
+                                                }
+                                            }
+                                        }
+                                        finalPriceArr.push(finalPrce);
+                                        finalPriceValueArr.push(discountAmount);
+
+                                    }
+
+
+                                    responseObj.offer = offerWord;
+
+                                } else {
+                                    responseObj.offer = ''
+                                }
                                 responseDt.push(responseObj);
                                 vendorIds.push(restaurant._id);
                             }
@@ -110,8 +173,20 @@ module.exports = {
                             //Restaurant
                             response_data.vendor = responseDt;
                             //Category Data
-                            response_data.category_data = await categorySchema.find({}, { "categoryName": 1, "image": 1 })
-                            response_data.category_imageUrl = `${config.serverhost}:${config.port}/img/category/`;
+
+                            var defaultCategory = [
+                                {
+                                    _id: '1',
+                                    categoryName: 'All',
+                                    image: '1.png'
+                                }
+                            ]
+
+                            var resCategoryData = await vendorCategorySchema.find({ isActive: true }, { "categoryName": 1, "image": 1 });
+    
+                            var mergedArr = defaultCategory.concat(resCategoryData);
+                            response_data.category_data = mergedArr;
+                            response_data.category_imageUrl = `${config.serverhost}:${config.port}/img/vendor_category/`;
 
                             //Banner Data
                             // console.log(vendorIds);
@@ -153,7 +228,7 @@ module.exports = {
 
             if (restaurantInformation == 'YES') {
 
-                vendorSchema.findOne({
+                var vendorDetailsObj = {
                     location: {
                         $near: {
                             $maxDistance: config.restaurantSearchDistance,
@@ -165,7 +240,9 @@ module.exports = {
                     },
                     _id: vendorId,
                     isActive: true
-                })
+                }
+
+                vendorSchema.findOne(vendorDetailsObj)
                     .populate('vendorOpenCloseTime')
                     .exec(async function (err, results) {
                         if (err) {
@@ -177,6 +254,7 @@ module.exports = {
                                 response_data: {}
                             });
                         } else {
+
                             if (results != null) {
                                 var restaurantInfo = {
                                     name: results.restaurantName,
@@ -189,6 +267,9 @@ module.exports = {
                                 //Calculate Distance
                                 var sourceLat = results.location.coordinates[1];
                                 var sourceLong = results.location.coordinates[0];
+
+                                restaurantInfo.latitude = sourceLat;
+                                restaurantInfo.longitude = sourceLong;
 
                                 var destLat = latt;
                                 var destLong = long;
@@ -395,7 +476,8 @@ module.exports = {
                 }
 
 
-                // console.log(itemObj);
+                //  console.log(itemObj);
+                //  return;
                 var errorCheck = 0;
                 var orderDetailsItm = [];
                 var itemsIdArr = [];
@@ -411,6 +493,8 @@ module.exports = {
                         orderDetailsItmObj.quantity = item.quantity;
                         orderDetailsItmObj.itemPrice = item.price;
                         orderDetailsItmObj.totalPrice = (Number(item.price) * Number(item.quantity));
+                        orderDetailsItmObj.itemOptions = item.itemOption;
+                        orderDetailsItmObj.itemExtras = item.menuExtra;
                         orderDetailsItm.push(orderDetailsItmObj);
                     }
                     // console.log(item.name);
@@ -465,15 +549,17 @@ module.exports = {
                                         orderTime: new Date(),
                                         estimatedDeliveryTime: waitingTimeAll,
 
-                                        deliveryPincode: data.deliveryPincode,
+                                        // deliveryPincode: data.deliveryPincode,
                                         deliveryHouseNo: data.deliveryHouseNo,
-                                        deliveryRoad: data.deliveryRoad,
+                                        //  deliveryRoad: data.deliveryRoad,
                                         deliveryCountryCode: data.deliveryCountryCode,
                                         deliveryPhone: data.deliveryPhone,
-                                        deliveryState: data.deliveryState,
-                                        deliveryCity: data.deliveryCity,
+                                        // deliveryState: data.deliveryState,
+                                        // deliveryCity: data.deliveryCity,
                                         deliveryLandmark: data.deliveryLandmark,
-                                        deliveryName: data.deliveryName,
+                                        fullAddess: data.fullAddess,
+                                        addressType: data.addressType,
+                                        // deliveryName: data.deliveryName,
 
                                         customerId: data.customerId,
                                         orderType: data.orderType,
@@ -516,8 +602,8 @@ module.exports = {
 
                                                 orderDetailsArr.push(orderEnter);
 
-                                                new OrderDetailSchema(orderEnter).save(async function (err, result) {
-                                                    orderIdsArr.push(result._id);
+                                                new OrderDetailSchema(orderEnter).save(async function (err, results) {
+                                                    orderIdsArr.push(results._id);
 
 
 
@@ -546,13 +632,13 @@ module.exports = {
                                                 content: pushMessage,
                                                 isRead: 'NO'
                                             }
-                                            new UserNotificationSchema(userNotificationData).save(async function (err, result) {
+                                            new UserNotificationSchema(userNotificationData).save(async function (err, resultNt) {
                                                 console.log('err', err);
-                                                console.log('result', result);
+                                                console.log('result', resultNt);
                                             });
 
                                             var respOrder = {};
-                                            respOrder.order = ordersObj;
+                                            respOrder.order = result;
                                             respOrder.orderDetails = orderDetailsArr;
                                             callBack({
                                                 success: true,
@@ -1040,7 +1126,7 @@ module.exports = {
                                         success: true,
                                         STATUSCODE: 200,
                                         message: 'No restaurants found.',
-                                        response_data: response_data
+                                        response_data: responseDt
                                     })
                                 }
                             }
@@ -1233,7 +1319,7 @@ module.exports = {
 
                         });
 
-                        
+
 
 
                     }
@@ -1257,6 +1343,316 @@ module.exports = {
 
         }
     },
+    //Physical address
+    physicalAddressByLatlong: (data, callBack) => {
+        if (data) {
+            var userType = data.body.userType;
+            var responseDt = [];
+            var response_data = {};
+
+            var customerId = data.body.customerId;
+            var latt = data.body.latitude;
+            var long = data.body.longitude;
+
+            var latLong = `${latt},${long}`
+
+
+            const Cryptr = require('cryptr');
+            const cryptr = new Cryptr('CARGORS');
+
+            const googleApiKey = cryptr.decrypt(config.google.API_KEY);
+
+
+
+
+            var url = "https://maps.googleapis.com/maps/api/geocode/json?latlng=" + latLong + "&language=en&key=" + googleApiKey + "";
+            var request = require('request');
+            request.get({
+                headers: { 'content-type': 'application/json' },
+                url: url
+            }, function (error, response, body) {
+                if (error) {
+                    return reject(error);
+                }
+                //console.log(body);
+                body = JSON.parse(body);
+
+                callBack({
+                    success: true,
+                    STATUSCODE: 200,
+                    message: 'Physical address',
+                    response_data: { address: body }
+                });
+
+
+            });
+
+
+
+        }
+    },
+    //Protect guest user
+    protectGuestUser: (data, callBack) => {
+        if (data) {
+            var userType = data.body.userType;
+            var responseDt = [];
+            var response_data = {};
+
+            let payload = { subject: '123', user: 'GUEST' };
+            const authToken = jwt.sign(payload, config.secretKey, { expiresIn: '3600000h' })
+
+            callBack({
+                success: true,
+                STATUSCODE: 200,
+                message: 'Guest token',
+                response_data: { authToken: authToken }
+            });
+        }
+    },
+    //Get Notification Settings
+    getNotificationData: (data, callBack) => {
+        if (data) {
+            var reqBody = data.body;
+            customerSchema
+                .findOne({ _id: reqBody.customerId })
+                .then(async (res) => {
+                    if (res != null) {
+
+                        userNotificationSettingSchema
+                            .findOne({ userId: reqBody.customerId })
+                            .then(async (usernotSetting) => {
+
+                                if (usernotSetting == null) {
+                                    usernotSettingData = { 'OrderStatusNotification': true, 'PromotionalNotification': true, 'RestaurantOfferNotification': true }
+                                } else {
+                                    usernotSettingData = usernotSetting.notificationData;
+
+                                }
+                                callBack({
+                                    success: true,
+                                    STATUSCODE: 200,
+                                    message: 'User Notification',
+                                    response_data: { usernotSetting: usernotSettingData }
+                                });
+                            })
+                            .catch((err) => {
+                                console.log(err);
+                                callBack({
+                                    success: false,
+                                    STATUSCODE: 500,
+                                    message: 'Internal DB error',
+                                    response_data: {}
+                                });
+                            })
+
+
+
+
+                    } else {
+                        callBack({
+                            success: false,
+                            STATUSCODE: 500,
+                            message: 'Internal DB error',
+                            response_data: {}
+                        });
+                    }
+
+                })
+                .catch((err) => {
+                    console.log(err);
+                    callBack({
+                        success: false,
+                        STATUSCODE: 500,
+                        message: 'Internal DB error',
+                        response_data: {}
+                    });
+                })
+
+
+        }
+    },
+    //Update Notification Settings
+    updateNotificationData: (data, callBack) => {
+        if (data) {
+            var reqBody = data.body;
+
+            var notificationData = reqBody.notificationData;
+
+            if (typeof notificationData == 'string') {
+                notificationDataObj = JSON.parse(notificationData);
+            } else {
+                notificationDataObj = notificationData;
+            }
+            customerSchema
+                .findOne({ _id: reqBody.customerId })
+                .then(async (res) => {
+                    if (res != null) {
+
+                        userNotificationSettingSchema
+                            .findOne({ userId: reqBody.customerId })
+                            .then(async (usernotSetting) => {
+
+                                if (usernotSetting == null) {
+                                    var addNotificationData = {
+                                        userId: reqBody.customerId,
+                                        userType: 'CUSTOMER',
+                                        notificationData: notificationDataObj
+                                    }
+
+                                    new userNotificationSettingSchema(addNotificationData).save(async function (err, result) {
+                                        if (err) {
+                                            console.log(err);
+                                            callBack({
+                                                success: false,
+                                                STATUSCODE: 500,
+                                                message: 'Internal DB error',
+                                                response_data: {}
+                                            });
+                                        } else {
+                                            callBack({
+                                                success: true,
+                                                STATUSCODE: 200,
+                                                message: 'User notification updated successfully',
+                                                response_data: {}
+                                            });
+                                        }
+                                    });
+                                } else {
+                                    var updateNotificationData = {
+                                        notificationData: notificationDataObj
+                                    }
+
+                                    userNotificationSettingSchema.update({ userId: reqBody.customerId }, {
+                                        $set: updateNotificationData
+                                    }, function (err, result) {
+                                        if (err) {
+                                            console.log(err);
+                                            callBack({
+                                                success: false,
+                                                STATUSCODE: 500,
+                                                message: 'Internal DB error',
+                                                response_data: {}
+                                            });
+                                        } else {
+                                            if (result.nModified == 1) {
+                                                callBack({
+                                                    success: true,
+                                                    STATUSCODE: 200,
+                                                    message: 'User notification updated successfully',
+                                                    response_data: {}
+                                                });
+                                            } else {
+                                                callBack({
+                                                    success: false,
+                                                    STATUSCODE: 500,
+                                                    message: 'Something went wrong.',
+                                                    response_data: {}
+                                                })
+                                            }
+
+                                        }
+                                    });
+                                }
+                            })
+                            .catch((err) => {
+                                console.log(err);
+                                callBack({
+                                    success: false,
+                                    STATUSCODE: 500,
+                                    message: 'Internal DB error',
+                                    response_data: {}
+                                });
+                            })
+
+
+
+
+                    } else {
+                        callBack({
+                            success: false,
+                            STATUSCODE: 500,
+                            message: 'Internal DB error',
+                            response_data: {}
+                        });
+                    }
+
+                })
+                .catch((err) => {
+                    console.log(err);
+                    callBack({
+                        success: false,
+                        STATUSCODE: 500,
+                        message: 'Internal DB error',
+                        response_data: {}
+                    });
+                })
+
+
+        }
+    },
+    // Notification List
+    notificationList: (data, callBack) => {
+        if (data) {
+            var reqBody = data.body;
+
+            customerSchema
+                .findOne({ _id: reqBody.customerId })
+                .then(async (res) => {
+                    if (res != null) {
+
+                        UserNotificationSchema
+                            .find({ userId: reqBody.customerId })
+                            .then(async (usernotifications) => {
+
+
+
+                                callBack({
+                                    success: true,
+                                    STATUSCODE: 200,
+                                    message: 'userNotificatons',
+                                    response_data: { notifications: usernotifications }
+                                });
+                            })
+                            .catch((err) => {
+                                console.log(err);
+                                callBack({
+                                    success: false,
+                                    STATUSCODE: 500,
+                                    message: 'Internal DB error',
+                                    response_data: {}
+                                });
+                            })
+
+
+
+
+                    } else {
+                        callBack({
+                            success: false,
+                            STATUSCODE: 500,
+                            message: 'Internal DB error',
+                            response_data: {}
+                        });
+                    }
+
+                })
+                .catch((err) => {
+                    console.log(err);
+                    callBack({
+                        success: false,
+                        STATUSCODE: 500,
+                        message: 'Internal DB error',
+                        response_data: {}
+                    });
+                })
+
+
+        }
+    },
+}
+
+function generateToken(userData) {
+
 }
 
 
@@ -1296,14 +1692,14 @@ function restaurantCategoryItem(vendorId, categoryId) {
             isActive: true
         }
 
-        if (categoryId != '') {
-            itemSerachParam.categoryId = categoryId;
-            var catId = 1;
+        if (categoryId == '1') { //ALL ITEMS
+
+        } else if (categoryId == '2') { //OFFERS
+            itemSerachParam.discountType = { $in: ['PERCENTAGE', 'FLAT'] }
         } else {
-            var catId = 0;
+            itemSerachParam.categoryId = categoryId;
         }
 
-        console.log(itemSerachParam);
         itemSchema.find(itemSerachParam)
             .sort({ createdAt: -1 })
             .exec(async function (err, results) {
@@ -1311,62 +1707,88 @@ function restaurantCategoryItem(vendorId, categoryId) {
                     console.log(err);
                     return resolve('err');
                 } else {
-                    if (catId == 1) { // Category with Items Data
-                        if (results.length > 0) {
-                            var itemsArr = [];
-                            for (let itemsVal of results) {
-                                var itemsObj = {};
-                                itemsObj.itemId = itemsVal._id
-                                itemsObj.itemName = itemsVal.itemName
-                                itemsObj.type = itemsVal.type
-                                itemsObj.price = itemsVal.price
-                                itemsObj.description = itemsVal.description
-                                itemsObj.menuImage = `${config.serverhost}:${config.port}/img/vendor/${itemsVal.menuImage}`;
-                                itemsObj.itemOptions = itemsVal.itemOptions;
 
-                                var extraitem = await ItemExtraSchema.find({ itemId: itemsVal._id }, { _id: 1, itemName: 1, price: 1, isActive: 1 });
-                                itemsObj.itemExtras = extraitem;
+                    if (results.length > 0) {
+                        var itemsArr = [];
+                        var categoryIdArr = [];
+                        for (let itemsVal of results) {
 
-                                itemsArr.push(itemsObj);
+                            console.log(itemsVal);
+                            var itemsObj = {};
+                            itemsObj.itemId = itemsVal._id
+                            itemsObj.categoryId = itemsVal.categoryId
+                            itemsObj.itemName = itemsVal.itemName
+                            itemsObj.type = itemsVal.type
+                            itemsObj.price = itemsVal.price
+                            itemsObj.description = itemsVal.description;
+                            itemsObj.waitingTime = itemsVal.waitingTime;
+                            itemsObj.discountType = itemsVal.discountType;
+                            itemsObj.discountAmount = itemsVal.discountAmount;
+                            itemsObj.discountedPrice = itemsVal.price;
+                            var orgAmount = itemsVal.price;
+                            var disAmount = itemsVal.discountAmount;
+                            var disType = itemsVal.discountType;
+                            if (itemsVal.discountType == 'PERCENTAGE') {
+                                console.log('amount', orgAmount, disAmount)
+                                itemsObj.discountedPrice = (Number(orgAmount) - (Number(orgAmount) * Number(disAmount) / 100));
+                            } else if (disType == 'FLAT') {
+                                itemsObj.discountedPrice = (Number(orgAmount) - Number(disAmount));
                             }
-                        }
-                        resp.item = itemsArr;
-                        // console.log(itemsArr);
-                    } else {
-                        if (results.length > 0) {
-                            var categoryId = results[0].categoryId;
-                            var itemsArr = [];
-                            var categoryIdArr = [];
-                            for (let itemsVal of results) {
+                            itemsObj.menuImage = `${config.serverhost}:${config.port}/img/vendor/${itemsVal.menuImage}`;
 
-                                if (itemsVal.categoryId.toString() == categoryId.toString()) {
-                                    var itemsObj = {};
-                                    itemsObj.itemId = itemsVal._id
-                                    itemsObj.categoryId = itemsVal.categoryId
-                                    itemsObj.itemName = itemsVal.itemName
-                                    itemsObj.type = itemsVal.type
-                                    itemsObj.price = itemsVal.price
-                                    itemsObj.description = itemsVal.description
-                                    itemsObj.menuImage = `${config.serverhost}:${config.port}/img/vendor/${itemsVal.menuImage}`;
-                                    itemsObj.itemOptions = itemsVal.itemOptions;
+                            var itemOptions = itemsVal.itemOptions;
+                            var itmOptionArr = [];
+                            if (itemOptions.length > 0) {
+                                for (let itemOption of itemOptions) {
+                                    if (itemOption.isActive == true) {
+                                        var itmOptionObj = {
+                                            isActive: true,
+                                            optionTitle: itemOption.optionTitle
+                                        }
+                                        var arrOptionArr = [];
+                                        var arrOp = itemOption.arrOptions;
 
-                                    var extraitem = await ItemExtraSchema.find({ itemId: itemsVal._id }, { _id: 1, itemName: 1, price: 1, isActive: 1 });
-                                    itemsObj.itemExtras = extraitem;
+                                        if (arrOp.length > 0) {
+                                            for (let arrOpVal of arrOp) {
+                                                if (arrOpVal.isActive == true) {
+                                                    var arrOptionArrObj = {
+                                                        isActive: true,
+                                                        name: arrOpVal.name
+                                                    };
 
-                                    itemsArr.push(itemsObj);
-                                }
-                                if (!categoryIdArr.includes(itemsVal.categoryId)) {
-                                    // console.log(itemsVal.categoryId); 
-                                    categoryIdArr.push(itemsVal.categoryId);
-                                    // console.log(categoryIdArr);
+                                                    arrOptionArr.push(arrOptionArrObj);
+
+                                                }
+                                            }
+                                        }
+                                        itmOptionObj.arrOptions = arrOptionArr;
+
+                                        itmOptionArr.push(itmOptionObj);
+
+                                    }
+
                                 }
 
                             }
+                            itemsObj.itemOptions = itmOptionArr;
+                            var extraitem = await ItemExtraSchema.find({ itemId: itemsVal._id, isActive: true }, { _id: 1, itemName: 1, price: 1, isActive: 1 });
+                            itemsObj.itemExtras = extraitem;
+
+                            itemsArr.push(itemsObj);
+
+                            if (!categoryIdArr.includes(itemsVal.categoryId)) {
+                                // console.log(itemsVal.categoryId); 
+                                categoryIdArr.push(itemsVal.categoryId);
+                                // console.log(categoryIdArr);
+                            }
+
                         }
-                        resp.item = itemsArr;
+                    }
+                    resp.item = itemsArr;
 
-                        // console.log(categoryIdArr);
+                    // console.log(categoryIdArr);
 
+                    if (categoryId == '1') {
                         //Category Data
                         var categoryData = {};
                         categoryData.data = await categorySchema.find({
@@ -1375,9 +1797,29 @@ function restaurantCategoryItem(vendorId, categoryId) {
                         // console.log(categoryData.data);
                         categoryData.imageUrl = `${config.serverhost}:${config.port}/img/category/`;
 
+                        var defaultCategory = [
+                            {
+                                _id: '1',
+                                categoryName: 'All',
+                                image: '1.png'
+                            },
+                            {
+                                _id: '2',
+                                categoryName: 'Offers',
+                                image: '2.jpg'
+                            }
+                        ]
+
+                        var mergedArr = defaultCategory.concat(categoryData.data);
+                        var categoryDatas = {
+                            data : mergedArr,
+                            imageUrl : categoryData.imageUrl
+                        }
                         // console.log(categoryData);
-                        resp.category = categoryData;
+                        resp.category =  categoryDatas;
+
                     }
+
                     return resolve(resp);
                 }
             })

@@ -35,6 +35,8 @@ module.exports = {
                 findCond.orderStatus = data.orderStatus;
             }
 
+            console.log(findCond);
+
             orderSchema
                 .find(findCond)
                 .sort({ orderTime: 'desc' })
@@ -58,6 +60,9 @@ module.exports = {
 
                             //Get Customer Info
                             var customerInfo = await customerSchema.findOne({ _id: order.customerId });
+
+                            console.log('customerId',order.customerId);
+                            console.log('customerInfo',customerInfo.countryCode);
                             orderObj.countryCode = customerInfo.countryCode;
                             orderObj.customerPhone = customerInfo.phone;
                             if (order.orderDetails.length > 0) {

@@ -85,6 +85,29 @@ module.exports = {
         }
        
     },
+    customerVerifyUser: (data, callBack) => {
+
+            async.waterfall([
+                function(nextCb) {
+                    registerModel.customerVerifyUser(data, function(result) {
+                        nextCb(null, result);
+                    })
+                }
+            ], function(err, result) {
+                if (err) {
+                    callBack({
+                        success: false,
+                        STATUSCODE: 403,
+                        message: 'Request Forbidden',
+                        response_data: {}
+                    })
+                } else {
+                    callBack(result);
+                }
+            });
+        
+       
+    },
 
     forgotEmail: (data, callBack) => {
        
@@ -705,5 +728,65 @@ module.exports = {
         });
     }
     
+    },
+    verifyUser: (data, callBack) => {
+        async.waterfall([
+            function(nextCb) {
+                registerModel.verifyUser(data, function(result) {
+                    nextCb(null, result);
+                });
+            }
+        ], function(err, result) {
+            if (err) {
+                callBack({
+                    success: false,
+                    STATUSCODE: 403,
+                    message: 'Request Forbidden',
+                    response_data: {}
+                })
+            } else {
+                callBack(result);
+            }
+        });
+    },
+    updateUserEmail: (data, callBack) => {
+        async.waterfall([
+            function(nextCb) {
+                registerModel.updateUserEmail(data, function(result) {
+                    nextCb(null, result);
+                });
+            }
+        ], function(err, result) {
+            if (err) {
+                callBack({
+                    success: false,
+                    STATUSCODE: 403,
+                    message: 'Request Forbidden',
+                    response_data: {}
+                })
+            } else {
+                callBack(result);
+            }
+        });
+    },
+    updateUserPhone: (data, callBack) => {
+        async.waterfall([
+            function(nextCb) {
+                registerModel.updateUserPhone(data, function(result) {
+                    nextCb(null, result);
+                });
+            }
+        ], function(err, result) {
+            if (err) {
+                callBack({
+                    success: false,
+                    STATUSCODE: 403,
+                    message: 'Request Forbidden',
+                    response_data: {}
+                })
+            } else {
+                callBack(result);
+            }
+        });
     },
 }

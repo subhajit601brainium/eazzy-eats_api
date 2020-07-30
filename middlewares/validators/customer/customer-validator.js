@@ -11,7 +11,7 @@ module.exports = {
             phone: joi.number().integer().error(new Error('Valid phone no is required')),
             socialId: joi.string().allow('').optional(),
             countryCode: joi.string().required().error(new Error('Country code is required')),
-            cityId: joi.string().required().error(new Error('City is reuired')),
+            cityId: joi.string().allow('').optional(),
             location: joi.string().allow('').optional(),
             password: joi.string().allow('').optional(),
             confirmPassword: joi.string().valid(joi.ref('password')).required().error(err => {
@@ -61,6 +61,56 @@ module.exports = {
             password: joi.string().allow('').optional(),
             userType: joi.string().required().valid(...userTypeVal).error(new Error('Please send valid userType')),
             loginType: joi.string().required().valid(...loginTypeVal).error(new Error('Please send valid loginType')),
+            deviceToken: joi.string().error(new Error('Device token required')),
+            appType: joi.string().valid(...appTypeVal).error(new Error('App type required')),
+            pushMode: joi.string().valid(...pushType).error(new Error('Push mode required'))
+        });
+
+        const value = await rules.validate(req.body);
+        if (value.error) {
+            console.log(value.error);
+            res.status(422).json({
+                success: false,
+                STATUSCODE: 422,
+                message: value.error.message
+            })
+        } else if ((req.body.userType != 'admin') && (req.body.userType != 'vendoradmin')) {
+            if ((req.body.deviceToken == '') || (req.body.deviceToken == undefined) || (req.body.appType == '') || (req.body.appType == undefined) || (req.body.pushMode == '') || (req.body.pushMode == undefined)) {
+                if ((req.body.deviceToken == '') || (req.body.deviceToken == undefined)) {
+                    res.status(422).json({
+                        success: false,
+                        STATUSCODE: 422,
+                        message: 'Device token required'
+                    })
+                } else if ((req.body.appType == '') || (req.body.appType == undefined)) {
+                    res.status(422).json({
+                        success: false,
+                        STATUSCODE: 422,
+                        message: 'App type required'
+                    })
+                } else if ((req.body.pushMode == '') || (req.body.pushMode == undefined)) {
+                    res.status(422).json({
+                        success: false,
+                        STATUSCODE: 422,
+                        message: 'Push mode required'
+                    })
+                }
+            } else {
+                next();
+            }
+        } else {
+            next();
+        }
+    },
+    customerVerifyUser: async (req, res, next) => {
+        const userTypeVal = ["customer", "deliveryboy", "vendorowner", "admin", "vendoradmin"];
+        const loginTypeVal = ["FACEBOOK", "GOOGLE", "EMAIL"];
+        const appTypeVal = ["ANDROID", "IOS", "BROWSER"];
+        const pushType = ["P", "S"];
+        const rules = joi.object({
+            userId: joi.string().required().error(new Error('User id is required')),
+            verificationCode: joi.string().required().error(new Error('Otp is required')),
+            userType: joi.string().required().valid(...userTypeVal).error(new Error('Please send valid userType')),
             deviceToken: joi.string().error(new Error('Device token required')),
             appType: joi.string().valid(...appTypeVal).error(new Error('App type required')),
             pushMode: joi.string().valid(...pushType).error(new Error('Push mode required'))
@@ -324,8 +374,6 @@ module.exports = {
     },
     profileImageUpload: async (req, res, next) => {
         const userTypeVal = ["customer", "deliveryboy", "vendorowner"];
-        // console.log(req.body);
-        // console.log(req.files);
         const rules = joi.object({
             customerId: joi.string().required().error(new Error('Customer id is required')),
             userType: joi.string().required().valid(...userTypeVal).error(new Error('Please send userType'))
@@ -401,6 +449,61 @@ module.exports = {
         } else {
             next();
         }
+    },
+    verifyUser: async (req, res, next) => {
+        const verifyType = ["EMAIL", "PHONE"];
+        const rules = joi.object({
+            customerId: joi.string().required().error(new Error('Customer id is required')),
+            verifyType: joi.string().valid(...verifyType).error(new Error('Verify Type is required')),
+        });
+
+        const value = await rules.validate(req.body);
+        if (value.error) {
+            res.status(422).json({
+                success: false,
+                STATUSCODE: 422,
+                message: value.error.message
+            })
+        } else {
+            next();
+        } 
+    },
+    updateUserEmail: async (req, res, next) => {
+        console.log(req.body);
+        const rules = joi.object({
+            customerId: joi.string().required().error(new Error('Customer id is required')),
+            email: joi.string().email().error(new Error('Valid email is required')),
+        });
+
+        const value = await rules.validate(req.body);
+        if (value.error) {
+            res.status(422).json({
+                success: false,
+                STATUSCODE: 422,
+                message: value.error.message
+            })
+        } else {
+            next();
+        } 
+    },
+    updateUserPhone: async (req, res, next) => {
+        console.log(req.body);
+        const rules = joi.object({
+            customerId: joi.string().required().error(new Error('Customer id is required')),
+            countryCode: joi.string().required().error(new Error('Country code is required')),
+            phone: joi.number().integer().error(new Error('Valid phone no is required')),
+        });
+
+        const value = await rules.validate(req.body);
+        if (value.error) {
+            res.status(422).json({
+                success: false,
+                STATUSCODE: 422,
+                message: value.error.message
+            })
+        } else {
+            next();
+        } 
     },
 }
 

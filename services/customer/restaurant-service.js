@@ -142,6 +142,46 @@ module.exports = {
             }
         });
     },
+    physicalAddressByLatlong: (data, callBack) => {
+        async.waterfall([
+            function(nextCb) {
+                restaurantModel.physicalAddressByLatlong(data, function(result) {
+                    nextCb(null, result);
+                })
+            }
+        ], function(err, result) {
+            if (err) {
+                callBack({
+                    success: false,
+                    STATUSCODE: 403,
+                    message: 'Request Forbidden',
+                    response_data: {}
+                })
+            } else {
+                callBack(result);
+            }
+        });
+    },
+    protectGuestUser: (data, callBack) => {
+        async.waterfall([
+            function(nextCb) {
+                restaurantModel.protectGuestUser(data, function(result) {
+                    nextCb(null, result);
+                })
+            }
+        ], function(err, result) {
+            if (err) {
+                callBack({
+                    success: false,
+                    STATUSCODE: 403,
+                    message: 'Request Forbidden',
+                    response_data: {}
+                })
+            } else {
+                callBack(result);
+            }
+        });
+    },
     addAddress: (data, callBack) => {
         async.waterfall([
             function(nextCb) {
@@ -206,6 +246,66 @@ module.exports = {
         async.waterfall([
             function(nextCb) {
                 restaurantModel.deleteAddress(data, function(result) {
+                    nextCb(null, result);
+                })
+            }
+        ], function(err, result) {
+            if (err) {
+                callBack({
+                    success: false,
+                    STATUSCODE: 403,
+                    message: 'Request Forbidden',
+                    response_data: {}
+                })
+            } else {
+                callBack(result);
+            }
+        });
+    },
+    getNotificationData: (data, callBack) => {
+        async.waterfall([
+            function(nextCb) {
+                restaurantModel.getNotificationData(data, function(result) {
+                    nextCb(null, result);
+                })
+            }
+        ], function(err, result) {
+            if (err) {
+                callBack({
+                    success: false,
+                    STATUSCODE: 403,
+                    message: 'Request Forbidden',
+                    response_data: {}
+                })
+            } else {
+                callBack(result);
+            }
+        });
+    },
+    updateNotificationData: (data, callBack) => {
+        async.waterfall([
+            function(nextCb) {
+                restaurantModel.updateNotificationData(data, function(result) {
+                    nextCb(null, result);
+                })
+            }
+        ], function(err, result) {
+            if (err) {
+                callBack({
+                    success: false,
+                    STATUSCODE: 403,
+                    message: 'Request Forbidden',
+                    response_data: {}
+                })
+            } else {
+                callBack(result);
+            }
+        });
+    },
+    notificationList: (data, callBack) => {
+        async.waterfall([
+            function(nextCb) {
+                restaurantModel.notificationList(data, function(result) {
                     nextCb(null, result);
                 })
             }

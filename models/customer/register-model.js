@@ -100,6 +100,19 @@ module.exports = {
                 function (arg1, nextCb) {
                     if (arg1.STATUSCODE === 200) {
                         var customerdata = data;
+                        customerdata.status = 'INACTIVE'
+
+                        //Developer: Subhajit Singha
+                        //Date: 20/02/2020
+                        //Description: Update Login Type
+                        var loginType = data.loginType;
+
+                        if ((data.loginType == undefined) || (data.loginType == '')) { //IF NO SOCIAL SIGN UP THEN GENERAL LOGIN
+                            loginType = 'GENERAL';
+                        }
+
+                        customerdata.loginType = loginType;
+
                         new customerSchema(customerdata).save(async function (err, result) {
                             if (err) {
                                 console.log(err);
@@ -110,127 +123,143 @@ module.exports = {
                                     response_data: {}
                                 });
                             } else {
-                                //ADD DATA IN USER LOGIN DEVICE TABLE
-                                var userDeviceData = {
-                                    userId: result._id,
-                                    userType: 'CUSTOMER',
-                                    appType: data.appType,
-                                    pushMode: data.pushMode,
-                                    deviceToken: data.deviceToken
-                                }
-                                new userDeviceLoginSchema(userDeviceData).save(async function (err, success) {
-                                    if (err) {
-                                        console.log(err);
-                                        nextCb(null, {
-                                            success: false,
-                                            STATUSCODE: 500,
-                                            message: 'Internal DB error',
-                                            response_data: {}
-                                        });
-                                    } else {
-                                        var loginId = success._id;
-                                        //Developer: Subhajit Singha
-                                        //Date: 20/02/2020
-                                        //Description: Update Login Type
-                                        var loginType = data.loginType;
 
-                                        if ((data.loginType == undefined) || (data.loginType == '')) { //IF NO SOCIAL SIGN UP THEN GENERAL LOGIN
-                                            loginType = 'GENERAL';
-                                        }
+                                updateUser({
+                                    loginType: loginType
+                                }, { _id: result._id });
 
-                                        const authToken = generateToken(result);
+                                console.log('loginType',loginType);
+                                if (loginType == 'GENERAL') {
+                                    var userOtp = await sendVerificationCode(result);
 
-                                        if (data.profileImage != '') { // IF SOCIAL PROFILE PIC PRESENT THEN UPLOAD IT IN OUR SERVER
-
-                                            const download = require('image-downloader')
-
-                                            // Download to a directory and save with the original filename
-                                            const options = {
-                                                url: data.profileImage,
-                                                dest: `public/img/profile-pic/`   // Save to /path/to/dest/image.jpg
-                                            }
-                                            const FileType = require('file-type');
-                                            download.image(options)
-                                                .then(({ filename, image }) => {
-                                                    (async () => {
-                                                        var fileInfo = await FileType.fromFile(filename);
-                                                        var fileExt = fileInfo.ext;
-                                                        // console.log(fileExt);
-
-                                                        var fs = require('fs');
-
-                                                        var file_name = `customerprofile-${Math.floor(Math.random() * 1000)}-${Math.floor(Date.now() / 1000)}.${fileExt}`;
-
-                                                        let image_path = `public/img/profile-pic/${file_name}`;
-
-                                                        fs.rename(filename, image_path, function (err) { //RENAME THE FILE
-                                                            if (err) console.log('ERROR: ' + err);
-                                                        })
-                                                        updateUser({ //UPDATE THE DATA IN DB
-                                                            profileImage: file_name
-                                                        }, { _id: result._id });
-
-                                                        var response = {
-                                                            userDetails: {
-                                                                firstName: result.firstName,
-                                                                lastName: result.lastName,
-                                                                email: result.email,
-                                                                phone: result.phone.toString(),
-                                                                socialId: result.socialId,
-                                                                id: result._id,
-                                                                loginId: loginId,
-                                                                profileImage: `${config.serverhost}:${config.port}/img/profile-pic/` + file_name,
-                                                                userType: 'customer',
-                                                                loginType: loginType
-                                                            },
-                                                            authToken: authToken
-                                                        }
-
-                                                        updateUser({
-                                                            loginType: loginType
-                                                        }, { _id: result._id });
-
-                                                        nextCb(null, {
-                                                            success: true,
-                                                            STATUSCODE: 200,
-                                                            message: 'Registration Successfull',
-                                                            response_data: response
-                                                        })
-
-                                                    })();
-                                                })
-                                        } else {
-                                            var response = {
-                                                userDetails: {
-                                                    firstName: result.firstName,
-                                                    lastName: result.lastName,
-                                                    email: result.email,
-                                                    phone: result.phone.toString(),
-                                                    socialId: result.socialId,
-                                                    id: result._id,
-                                                    loginId: loginId,
-                                                    profileImage: '',
-                                                    userType: 'customer',
-                                                    loginType: loginType
-                                                },
-                                                authToken: authToken
-                                            }
-                                            updateUser({
-                                                loginType: loginType
-                                            }, { _id: result._id });
-
-                                            nextCb(null, {
-                                                success: true,
-                                                STATUSCODE: 200,
-                                                message: 'Registration Successfull',
-                                                response_data: response
-                                            })
-                                        }
-
+                                    var resUser = {
+                                        userId: result._id
                                     }
 
+                                    nextCb(null, {
+                                        success: false,
+                                        STATUSCODE: 200,
+                                        message: 'Please check your email. We have sent a code to be used to verify your account.',
+                                        response_data: resUser
+                                    });
+                                } else {
 
-                                });
+                                    //ADD DATA IN USER LOGIN DEVICE TABLE
+                                    var userDeviceData = {
+                                        userId: result._id,
+                                        userType: 'CUSTOMER',
+                                        appType: data.appType,
+                                        pushMode: data.pushMode,
+                                        deviceToken: data.deviceToken
+                                    }
+                                    new userDeviceLoginSchema(userDeviceData).save(async function (err, success) {
+                                        if (err) {
+                                            console.log(err);
+                                            nextCb(null, {
+                                                success: false,
+                                                STATUSCODE: 500,
+                                                message: 'Internal DB error',
+                                                response_data: {}
+                                            });
+                                        } else {
+                                            var loginId = success._id;
+
+
+                                            const authToken = generateToken(result);
+
+                                            
+
+                                            if (data.profileImage != '') { // IF SOCIAL PROFILE PIC PRESENT THEN UPLOAD IT IN OUR SERVER
+
+                                                const download = require('image-downloader')
+        
+                                                // Download to a directory and save with the original filename
+                                                const options = {
+                                                    url: data.profileImage,
+                                                    dest: `public/img/profile-pic/`   // Save to /path/to/dest/image.jpg
+                                                }
+                                                const FileType = require('file-type');
+                                                download.image(options)
+                                                    .then(({ filename, image }) => {
+                                                        (async () => {
+                                                            var fileInfo = await FileType.fromFile(filename);
+                                                            var fileExt = fileInfo.ext;
+                                                            // console.log(fileExt);
+        
+                                                            var fs = require('fs');
+        
+                                                            var file_name = `customerprofile-${Math.floor(Math.random() * 1000)}-${Math.floor(Date.now() / 1000)}.${fileExt}`;
+        
+                                                            let image_path = `public/img/profile-pic/${file_name}`;
+        
+                                                            fs.rename(filename, image_path, function (err) { //RENAME THE FILE
+                                                                if (err) console.log('ERROR: ' + err);
+                                                            })
+                                                            updateUser({ //UPDATE THE DATA IN DB
+                                                                profileImage: file_name
+                                                            }, { _id: result._id });
+
+                                                            var response = {
+                                                                userDetails: {
+                                                                    firstName: result.firstName,
+                                                                    lastName: result.lastName,
+                                                                    email: result.email,
+                                                                    phone: result.phone.toString(),
+                                                                    socialId: result.socialId,
+                                                                    id: result._id,
+                                                                    loginId: loginId,
+                                                                    profileImage: `${config.serverhost}:${config.port}/img/profile-pic/` + file_name,
+                                                                    userType: 'customer',
+                                                                    loginType: result.loginType
+                                                                },
+                                                                authToken: authToken
+                                                            }
+
+                                                            nextCb(null, {
+                                                                success: true,
+                                                                STATUSCODE: 200,
+                                                                message: 'Registration successfully.',
+                                                                response_data: response
+                                                            });
+        
+                                                        })();
+                                                    })
+                                            } else {
+                                                
+                                                var response = {
+                                                    userDetails: {
+                                                        firstName: result.firstName,
+                                                        lastName: result.lastName,
+                                                        email: result.email,
+                                                        phone: result.phone.toString(),
+                                                        socialId: result.socialId,
+                                                        id: result._id,
+                                                        loginId: loginId,
+                                                        profileImage: '',
+                                                        userType: 'customer',
+                                                        loginType: result.loginType
+                                                    },
+                                                    authToken: authToken
+                                                }
+        
+                                                nextCb(null, {
+                                                    success: true,
+                                                    STATUSCODE: 200,
+                                                    message: 'Registration successfully.',
+                                                    response_data: response
+                                                });
+        
+                                            }
+
+                                        }
+                                    })
+
+                                }
+
+
+
+
+
                             }
                         })
                     } else {
@@ -240,7 +269,7 @@ module.exports = {
                 function (arg2, nextCb) {
                     if (arg2.STATUSCODE === 200) {
                         /** Send Registration Email */
-                        mail('userRegistrationMail')(arg2.response_data.userDetails.email, arg2.response_data.userDetails).send();
+                        // mail('userRegistrationMail')(arg2.response_data.userDetails.email, arg2.response_data.userDetails).send();
                         nextCb(null, arg2);
                     } else {
                         nextCb(null, arg2);
@@ -283,9 +312,7 @@ module.exports = {
                 }
             }
 
-            console.log(loginUser);
-
-            customerSchema.findOne(loginCond, function (err, result) {
+            customerSchema.findOne(loginCond, async function (err, result) {
 
                 if (err) {
                     callBack({
@@ -296,107 +323,124 @@ module.exports = {
                     });
                 } else {
                     if (result) {
-                        if (data.userType == 'admin') {
-                            var userType = 'ADMIN'
-                            data.appType = 'BROWSER';
-                            data.pushMode = 'P';
-                            data.deviceToken = '';
-                        } else {
-                            var userType = 'CUSTOMER'
-                        }
-                        //ADD DATA IN USER LOGIN DEVICE TABLE
-                        var userDeviceData = {
-                            userId: result._id,
-                            userType: userType,
-                            appType: data.appType,
-                            pushMode: data.pushMode,
-                            deviceToken: data.deviceToken
-                        }
-                        new userDeviceLoginSchema(userDeviceData).save(async function (err, success) {
-                            if (err) {
-                                console.log(err);
-                                nextCb(null, {
-                                    success: false,
-                                    STATUSCODE: 500,
-                                    message: 'Internal DB error',
-                                    response_data: {}
-                                });
+                        if (result.status == 'ACTIVE') {
+                            if (data.userType == 'admin') {
+                                var userType = 'ADMIN'
+                                data.appType = 'BROWSER';
+                                data.pushMode = 'P';
+                                data.deviceToken = '';
                             } else {
-                                var loginId = success._id;
-                                if (loginUser == 'SOCIAL') { //IF SOCIAL LOGIN THEN NO NEED TO CHECK THE PASSWORD 
-                                    const authToken = generateToken(result);
-                                    let response = {
-                                        userDetails: {
-                                            firstName: result.firstName,
-                                            lastName: result.lastName,
-                                            email: result.email,
-                                            countryCode: result.countryCode,
-                                            phone: result.phone.toString(),
-                                            socialId: result.socialId,
-                                            id: result._id,
-                                            loginId: loginId,
-                                            profileImage: `${config.serverhost}:${config.port}/img/profile-pic/` + result.profileImage,
-                                            userType: data.userType,
-                                            loginType: data.loginType
-                                        },
-                                        authToken: authToken
-                                    }
+                                var userType = 'CUSTOMER'
+                            }
+                            //ADD DATA IN USER LOGIN DEVICE TABLE
+                            var userDeviceData = {
+                                userId: result._id,
+                                userType: userType,
+                                appType: data.appType,
+                                pushMode: data.pushMode,
+                                deviceToken: data.deviceToken
+                            }
+                            new userDeviceLoginSchema(userDeviceData).save(async function (err, success) {
+                                if (err) {
+                                    console.log(err);
+                                    nextCb(null, {
+                                        success: false,
+                                        STATUSCODE: 500,
+                                        message: 'Internal DB error',
+                                        response_data: {}
+                                    });
+                                } else {
+                                    var loginId = success._id;
+                                    if (loginUser == 'SOCIAL') { //IF SOCIAL LOGIN THEN NO NEED TO CHECK THE PASSWORD 
+                                        const authToken = generateToken(result);
+                                        let response = {
+                                            userDetails: {
+                                                firstName: result.firstName,
+                                                lastName: result.lastName,
+                                                email: result.email,
+                                                countryCode: result.countryCode,
+                                                phone: result.phone.toString(),
+                                                socialId: result.socialId,
+                                                id: result._id,
+                                                loginId: loginId,
+                                                profileImage: `${config.serverhost}:${config.port}/img/profile-pic/` + result.profileImage,
+                                                userType: data.userType,
+                                                loginType: data.loginType
+                                            },
+                                            authToken: authToken
+                                        }
 
-                                    callBack({
-                                        success: true,
-                                        STATUSCODE: 200,
-                                        message: 'Login Successfull',
-                                        response_data: response
-                                    })
-
-                                } else { //NORMAL LOGIN
-                                    //  console.log('hello');
-                                    if ((data.password == '') || (data.password == undefined)) {
                                         callBack({
-                                            success: false,
-                                            STATUSCODE: 422,
-                                            message: 'Password is required',
-                                            response_data: {}
-                                        });
-                                    } else {
-                                        const comparePass = bcrypt.compareSync(data.password, result.password);
-                                        if (comparePass) {
-                                            const authToken = generateToken(result);
-                                            let response = {
-                                                userDetails: {
-                                                    firstName: result.firstName,
-                                                    lastName: result.lastName,
-                                                    email: result.email,
-                                                    phone: result.phone.toString(),
-                                                    socialId: result.socialId,
-                                                    id: result._id,
-                                                    loginId: loginId,
-                                                    profileImage: `${config.serverhost}:${config.port}/img/profile-pic/` + result.profileImage,
-                                                    userType: data.userType,
-                                                    loginType: data.loginType
-                                                },
-                                                authToken: authToken
-                                            }
+                                            success: true,
+                                            STATUSCODE: 200,
+                                            message: 'Login Successfull',
+                                            response_data: response
+                                        })
 
-                                            callBack({
-                                                success: true,
-                                                STATUSCODE: 200,
-                                                message: 'Login Successfull',
-                                                response_data: response
-                                            })
-
-                                        } else {
+                                    } else { //NORMAL LOGIN
+                                        //  console.log('hello');
+                                        if ((data.password == '') || (data.password == undefined)) {
                                             callBack({
                                                 success: false,
                                                 STATUSCODE: 422,
-                                                message: loginErrMsg,
+                                                message: 'Password is required',
                                                 response_data: {}
                                             });
+                                        } else {
+                                            const comparePass = bcrypt.compareSync(data.password, result.password);
+                                            if (comparePass) {
+                                                const authToken = generateToken(result);
+                                                let response = {
+                                                    userDetails: {
+                                                        firstName: result.firstName,
+                                                        lastName: result.lastName,
+                                                        email: result.email,
+                                                        phone: result.phone.toString(),
+                                                        socialId: result.socialId,
+                                                        id: result._id,
+                                                        loginId: loginId,
+                                                        profileImage: `${config.serverhost}:${config.port}/img/profile-pic/` + result.profileImage,
+                                                        userType: data.userType,
+                                                        loginType: data.loginType
+                                                    },
+                                                    authToken: authToken
+                                                }
+
+                                                callBack({
+                                                    success: true,
+                                                    STATUSCODE: 200,
+                                                    message: 'Login Successfull',
+                                                    response_data: response
+                                                })
+
+                                            } else {
+                                                callBack({
+                                                    success: false,
+                                                    STATUSCODE: 422,
+                                                    message: loginErrMsg,
+                                                    response_data: {}
+                                                });
+                                            }
                                         }
                                     }
                                 }
+                            })
+
+                        } else {
+
+                            var userOtp = await sendVerificationCode(result);
+
+                            var resUser = {
+                                userId: result._id
                             }
-                        })
+
+                            callBack({
+                                success: false,
+                                STATUSCODE: 410,
+                                message: 'Please check your email. We have sent a code to be used to verify your account.',
+                                response_data: resUser
+                            });
+                        }
 
                     } else {
                         if ((data.loginType != 'EMAIL') && (loginUser == 'SOCIAL')) {
@@ -421,6 +465,106 @@ module.exports = {
             })
         }
     },
+    customerVerifyUser: (req, callBack) => {
+        if (req) {
+            var data = req.body;
+
+            var userId = data.userId;
+            var verifyOtp = data.verificationCode;
+
+            customerSchema.findOne({ _id: userId })
+                .then(async (customer) => {
+                    if (customer != null) {
+
+                        var otpCheck = await customerSchema.findOne({ _id: userId, verifyOtp: verifyOtp });
+
+                        if (otpCheck != null) {
+                            var userResp = await customerSchema.updateOne({ _id: userId }, { $set: { status: 'ACTIVE' } });
+
+                            mail('userRegistrationMail')(customer.email, {}).send();
+
+                            //ADD DATA IN USER LOGIN DEVICE TABLE
+                            var userDeviceData = {
+                                userId: userId,
+                                userType: 'CUSTOMER',
+                                appType: data.appType,
+                                pushMode: data.pushMode,
+                                deviceToken: data.deviceToken
+                            }
+                            new userDeviceLoginSchema(userDeviceData).save(async function (err, success) {
+                                if (err) {
+                                    console.log(err);
+                                    nextCb(null, {
+                                        success: false,
+                                        STATUSCODE: 500,
+                                        message: 'Internal DB error',
+                                        response_data: {}
+                                    });
+                                } else {
+                                    var loginId = success._id;
+
+
+                                    const authToken = generateToken(customer);
+
+                                    var response = {
+                                        userDetails: {
+                                            firstName: customer.firstName,
+                                            lastName: customer.lastName,
+                                            email: customer.email,
+                                            phone: customer.phone.toString(),
+                                            socialId: customer.socialId,
+                                            id: customer._id,
+                                            loginId: loginId,
+                                            profileImage: `${config.serverhost}:${config.port}/img/profile-pic/` + customer.profileImage,
+                                            userType: 'customer',
+                                            loginType: customer.loginType
+                                        },
+                                        authToken: authToken
+                                    }
+
+
+
+                                    callBack({
+                                        success: true,
+                                        STATUSCODE: 200,
+                                        message: 'User verified succesfully.',
+                                        response_data: response
+                                    })
+                                }
+                            });
+                        } else {
+                            callBack({
+                                success: false,
+                                STATUSCODE: 422,
+                                message: 'Invalid verification code.',
+                                response_data: {}
+                            })
+                        }
+
+
+
+
+
+
+
+                    } else {
+                        callBack({
+                            success: false,
+                            STATUSCODE: 422,
+                            message: 'User not found.',
+                            response_data: {}
+                        });
+                    }
+
+                });
+
+
+
+
+
+
+        }
+    },
     customerForgotPassword: (data, callBack) => {
         if (data) {
             customerSchema.findOne({ email: data.email, loginType: 'GENERAL' }, function (err, customer) {
@@ -438,6 +582,7 @@ module.exports = {
                         customer.forgotPasswordOtp = forgotPasswordOtp;
                         try {
                             mail('forgotPasswordMail')(customer.email, customer).send();
+                            console.log('done');
                             callBack({
                                 success: false,
                                 STATUSCODE: 200,
@@ -2222,7 +2367,7 @@ module.exports = {
                                 callBack({
                                     success: false,
                                     STATUSCODE: 200,
-                                    message: 'Please check your email. We have sent a code to be used to reset password.',
+                                    message: 'Please check your email. We have sent a code to be used to reset.',
                                     response_data: {
                                         email: customer.email,
                                         forgotPassOtp: forgotPasswordOtp
@@ -2280,6 +2425,180 @@ module.exports = {
                     }
                 })
             }
+
+        }
+    },
+    //verify User Before Changing Email/Phone
+    verifyUser: async (data, callBack) => {
+        if (data) {
+            var reqBody = data.body;
+
+
+            customerSchema
+                .findOne({ _id: reqBody.customerId })
+                .then((customerres) => {
+                    if (customerres != null) {
+
+                        let forgotPasswordOtp = Math.random().toString().replace('0.', '').substr(0, 6);
+                        customer = {};
+                        customer.forgotPasswordOtp = forgotPasswordOtp;
+                        try {
+                            mail('verifyUserlMail')(customerres.email, customer).send();
+                            callBack({
+                                success: false,
+                                STATUSCODE: 200,
+                                message: 'Please check your email.',
+                                response_data: {
+                                    email: customer.email,
+                                    otp: forgotPasswordOtp
+                                }
+                            });
+                        } catch (Error) {
+                            console.log('Something went wrong while sending email');
+                        }
+
+                    } else {
+                        callBack({
+                            success: false,
+                            STATUSCODE: 422,
+                            message: 'User not found.',
+                            response_data: {}
+                        });
+                    }
+                })
+                .catch((err) => {
+                    console.log(err);
+                    callBack({
+                        success: false,
+                        STATUSCODE: 400,
+                        message: 'Something went wrong.',
+                        response_data: {}
+                    });
+                });
+
+
+
+
+
+        }
+    },
+    //Vendor Email Update
+    updateUserEmail: async (data, callBack) => {
+        if (data) {
+            var reqBody = data.body;
+
+            var updateUser = {
+                email: reqBody.email,
+            }
+
+            customerSchema
+                .findOne({ email: reqBody.email })
+                .then((customerres) => {
+
+                    if (customerres == null) {
+                        customerSchema.update({ _id: reqBody.customerId }, {
+                            $set: updateUser
+                        }, function (err, res) {
+                            if (err) {
+                                callBack({
+                                    success: false,
+                                    STATUSCODE: 500,
+                                    message: 'Internal DB error',
+                                    response_data: {}
+                                });
+                            } else {
+                                callBack({
+                                    success: true,
+                                    STATUSCODE: 200,
+                                    message: 'Email updated succsessfully.',
+                                    response_data: {}
+                                });
+
+                            }
+                        });
+                    } else {
+                        callBack({
+                            success: false,
+                            STATUSCODE: 422,
+                            message: 'Email already exists.',
+                            response_data: {}
+                        });
+                    }
+
+                })
+                .catch((err) => {
+                    console.log(err);
+                    callBack({
+                        success: false,
+                        STATUSCODE: 400,
+                        message: 'Something went wrong.',
+                        response_data: {}
+                    });
+                });
+
+
+
+
+
+        }
+    },
+    //Vendor Phone Update
+    updateUserPhone: async (data, callBack) => {
+        if (data) {
+            var reqBody = data.body;
+
+            var updateUser = {
+                countryCode: reqBody.countryCode,
+                phone: reqBody.phone,
+            }
+
+            customerSchema
+                .findOne({ phone: reqBody.phone })
+                .then((customerRes) => {
+                    if (customerRes == null) {
+                        customerSchema.update({ _id: reqBody.customerId }, {
+                            $set: updateUser
+                        }, function (err, res) {
+                            if (err) {
+                                callBack({
+                                    success: false,
+                                    STATUSCODE: 500,
+                                    message: 'Internal DB error',
+                                    response_data: {}
+                                });
+                            } else {
+                                callBack({
+                                    success: true,
+                                    STATUSCODE: 200,
+                                    message: 'Phone updated succsessfully.',
+                                    response_data: {}
+                                });
+
+                            }
+                        });
+                    } else {
+                        callBack({
+                            success: false,
+                            STATUSCODE: 422,
+                            message: 'Phone already exists.',
+                            response_data: {}
+                        });
+                    }
+
+                })
+                .catch((err) => {
+                    console.log(err);
+                    callBack({
+                        success: false,
+                        STATUSCODE: 400,
+                        message: 'Something went wrong.',
+                        response_data: {}
+                    });
+                });
+
+
+
+
 
         }
     },
@@ -2344,4 +2663,32 @@ function updateVendor(update, cond) {
 
 function getExtension(filename) {
     return filename.substring(filename.indexOf('.') + 1);
+}
+
+function sendVerificationCode(customer) {
+    return new Promise(async function (resolve, reject) {
+
+        let otp = Math.random().toString().replace('0.', '').substr(0, 6);
+        customer = customer.toObject();
+        customer.otp = otp;
+        try {
+            mail('sendOTPdMail')(customer.email, customer).send();
+
+            await customerSchema.updateOne({ _id: customer._id }, {
+                $set: {
+                    verifyOtp: otp
+                }
+            });
+            var resp = {
+            }
+            return resolve(resp);
+
+
+        } catch (Error) {
+            console.log(Error);
+            return reject();
+        }
+
+    });
+
 }
